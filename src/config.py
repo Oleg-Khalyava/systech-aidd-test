@@ -16,6 +16,7 @@ class Config:
         openrouter_model: Модель LLM для использования
         default_system_prompt: Системный промпт по умолчанию
         max_context_messages: Максимальное количество сообщений в контексте
+        welcome_message: Текст приветственного сообщения
     """
     
     telegram_bot_token: str
@@ -24,6 +25,7 @@ class Config:
     openrouter_model: str
     default_system_prompt: str
     max_context_messages: int
+    welcome_message: str
     
     @classmethod
     def load(cls) -> "Config":
@@ -53,6 +55,10 @@ class Config:
             "DEFAULT_SYSTEM_PROMPT", "Ты полезный AI-ассистент"
         )
         max_messages = int(os.getenv("MAX_CONTEXT_MESSAGES", "10"))
+        welcome_msg = os.getenv(
+            "WELCOME_MESSAGE",
+            "я AI-ассистент на базе LLM. Задавай любые вопросы, и я постараюсь помочь!"
+        )
         
         return cls(
             telegram_bot_token=token,
@@ -61,5 +67,6 @@ class Config:
             openrouter_model=model,
             default_system_prompt=system_prompt,
             max_context_messages=max_messages,
+            welcome_message=welcome_msg,
         )
 

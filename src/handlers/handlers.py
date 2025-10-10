@@ -37,7 +37,7 @@ def init_handlers(
 
 @router.message(Command("start"))
 async def cmd_start(message: Message) -> None:
-    """Обработчик команды /start
+    """Обработчик команды /start - приветствие и инициализация пользователя
     
     Args:
         message: Сообщение от пользователя
@@ -56,10 +56,24 @@ async def cmd_start(message: Message) -> None:
     # Создаем или получаем диалог
     conversation_storage.get_or_create(message.chat.id)
     
-    await message.answer(
-        f"Привет, {user.first_name}! Я AI-ассистент на базе LLM. "
-        "Задавай любые вопросы, и я постараюсь помочь!"
-    )
+    # Отправляем приветствие из конфига с именем пользователя
+    await message.answer(f"Привет, {user.first_name}! {config.welcome_message}")
+
+
+@router.message(Command("clear"))
+async def cmd_clear(message: Message) -> None:
+    """Обработчик команды /clear - очистка истории диалога
+    
+    Args:
+        message: Сообщение от пользователя
+    """
+    conversation = conversation_storage.get(message.chat.id)
+    
+    if conversation:
+        conversation.clear()
+        await message.answer("✅ История диалога очищена. Начнем сначала!")
+    else:
+        await message.answer("История диалога уже пуста.")
 
 
 @router.message()
