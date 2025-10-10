@@ -39,14 +39,16 @@
 
 ```
 systech-aidd-test/
-├── main.py                  # Точка входа, запуск бота
-├── bot.py                   # Класс бота (aiogram)
-├── config.py                # Класс конфигурации
-├── conversation.py          # Класс для управления диалогами
-├── user.py                  # Класс для управления пользователями
-├── handlers/
+├── src/
 │   ├── __init__.py
-│   └── handlers.py          # Обработчики сообщений и команд
+│   ├── main.py              # Точка входа, запуск бота
+│   ├── bot.py               # Класс бота (aiogram)
+│   ├── config.py            # Класс конфигурации
+│   ├── conversation.py      # Класс для управления диалогами
+│   ├── user.py              # Класс для управления пользователями
+│   └── handlers/
+│       ├── __init__.py
+│       └── handlers.py      # Обработчики сообщений и команд
 ├── llm/
 │   ├── __init__.py
 │   └── client.py            # Класс для работы с LLM
@@ -89,9 +91,9 @@ systech-aidd-test/
 
 ### Описание компонентов
 - **Bot** - инициализация aiogram, polling, маршрутизация
-- **Handlers** - обработка команд (/start, /help) и текстовых сообщений
+- **Handlers** - обработка команд (/start, /clear) и текстовых сообщений
 - **Conversation** - хранение истории диалога, управление контекстом
-- **User** - хранение данных пользователя (telegram_id, настройки)
+- **User** - хранение данных пользователя (chat_id, настройки)
 - **LLM Client** - отправка запросов к LLM, получение ответов
 - **Config** - загрузка и хранение конфигурации из .env
 
@@ -100,7 +102,7 @@ systech-aidd-test/
 ### User (класс пользователя)
 ```python
 class User:
-    telegram_id: int         # ID пользователя в Telegram
+    chat_id: int             # ID чата в Telegram
     username: str            # Username
     first_name: str          # Имя
     current_role: str        # Текущая роль (системный промпт)
@@ -109,7 +111,7 @@ class User:
 ### Conversation (класс диалога)
 ```python
 class Conversation:
-    user_id: int             # ID пользователя
+    chat_id: int             # ID чата
     messages: list           # История сообщений [{role, content}]
 ```
 
@@ -122,8 +124,8 @@ class Conversation:
 ```
 
 ### Хранение данных
-- **UserStorage** - словарь `{telegram_id: User}`
-- **ConversationStorage** - словарь `{user_id: Conversation}`
+- **UserStorage** - словарь `{chat_id: User}`
+- **ConversationStorage** - словарь `{chat_id: Conversation}`
 
 ## Работа с LLM
 
