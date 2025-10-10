@@ -35,7 +35,7 @@ class Config:
             Config: Объект конфигурации
             
         Raises:
-            ValueError: Если обязательные параметры не указаны
+            ValueError: Если обязательные параметры не указаны или имеют неверный формат
         """
         load_dotenv()
         
@@ -43,10 +43,14 @@ class Config:
         token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not token:
             raise ValueError("TELEGRAM_BOT_TOKEN is required in .env file")
+        if not token.strip():
+            raise ValueError("TELEGRAM_BOT_TOKEN cannot be empty")
         
         api_key = os.getenv("OPENROUTER_API_KEY")
         if not api_key:
             raise ValueError("OPENROUTER_API_KEY is required in .env file")
+        if not api_key.strip():
+            raise ValueError("OPENROUTER_API_KEY cannot be empty")
         
         # Параметры с значениями по умолчанию
         base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
@@ -54,15 +58,26 @@ class Config:
         system_prompt = os.getenv(
             "DEFAULT_SYSTEM_PROMPT", "Ты полезный AI-ассистент"
         )
-        max_messages = int(os.getenv("MAX_CONTEXT_MESSAGES", "10"))
+        
+        # Валидация числовых параметров
+        max_messages_str = os.getenv("MAX_CONTEXT_MESSAGES", "10")
+        try:
+            max_messages = int(max_messages_str)
+            if max_messages <= 0:
+                raise ValueError("MAX_CONTEXT_MESSAGES must be greater than 0")
+        except ValueError as e:
+            if "invalid literal" in str(e):
+                raise ValueError(f"MAX_CONTEXT_MESSAGES must be a valid integer, got: {max_messages_str}")
+            raise
+        
         welcome_msg = os.getenv(
             "WELCOME_MESSAGE",
             "я AI-ассистент на базе LLM. Задавай любые вопросы, и я постараюсь помочь!"
         )
         
         return cls(
-            telegram_bot_token=token,
-            openrouter_api_key=api_key,
+            telegram_bot_token=token.strip(),
+            openrouter_api_key=api_key.strip(),
             openrouter_base_url=base_url,
             openrouter_model=model,
             default_system_prompt=system_prompt,

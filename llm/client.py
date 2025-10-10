@@ -1,6 +1,9 @@
 """Класс для работы с LLM через OpenRouter API"""
 
+import logging
 from openai import AsyncOpenAI
+
+logger = logging.getLogger("telegram_bot")
 
 
 class LLMClient:
@@ -37,12 +40,20 @@ class LLMClient:
         Raises:
             Exception: При ошибках API
         """
+        logger.info(f"Sending request to LLM (model: {self.model}, messages count: {len(messages)})")
+        
         try:
             response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=messages
             )
-            return response.choices[0].message.content
+            response_text = response.choices[0].message.content
+            logger.info(
+                f"Received response from LLM (length: {len(response_text)} chars, "
+                f"tokens used: {response.usage.total_tokens if response.usage else 'N/A'})"
+            )
+            return response_text
         except Exception as e:
+            logger.error(f"LLM API error: {e}", exc_info=True)
             raise Exception(f"LLM API error: {e}")
 

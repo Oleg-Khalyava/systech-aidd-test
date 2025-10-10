@@ -1,5 +1,6 @@
 """Обработчики команд и сообщений Telegram бота"""
 
+import logging
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -9,6 +10,7 @@ from src.conversation import ConversationStorage
 from llm.client import LLMClient
 
 router = Router()
+logger = logging.getLogger("telegram_bot")
 
 # Глобальные хранилища и клиент (будут инициализированы в main.py)
 user_storage: UserStorage
@@ -45,6 +47,11 @@ async def cmd_start(message: Message) -> None:
     if not message.from_user:
         return
     
+    logger.info(
+        f"Received /start command from user {message.from_user.id} "
+        f"(@{message.from_user.username}, {message.from_user.first_name})"
+    )
+    
     # Создаем или получаем пользователя
     user = user_storage.get_or_create(
         chat_id=message.chat.id,
@@ -67,10 +74,14 @@ async def cmd_clear(message: Message) -> None:
     Args:
         message: Сообщение от пользователя
     """
+    logger.info(f"Received /clear command from user {message.from_user.id if message.from_user else 'unknown'}")
+    
     conversation = conversation_storage.get(message.chat.id)
     
     if conversation:
+        messages_count = len(conversation.messages)
         conversation.clear()
+        logger.info(f"Cleared conversation history for chat {message.chat.id} ({messages_count} messages)")
         await message.answer("✅ История диалога очищена. Начнем сначала!")
     else:
         await message.answer("История диалога уже пуста.")
@@ -85,6 +96,11 @@ async def message_handler(message: Message) -> None:
     """
     if not message.text or not message.from_user:
         return
+    
+    logger.info(
+        f"Received message from user {message.from_user.id} "
+        f"(@{message.from_user.username}): {message.text[:50]}{'...' if len(message.text) > 50 else ''}"
+    )
     
     # Получаем пользователя и диалог
     user = user_storage.get_or_create(
@@ -111,10 +127,19 @@ async def message_handler(message: Message) -> None:
         # Добавляем ответ в историю
         conversation.add_message("assistant", response)
         
+        logger.info(
+            f"Successfully processed message for user {message.from_user.id}, "
+            f"response length: {len(response)} chars"
+        )
+        
         # Отправляем ответ пользователю
         await message.answer(response)
         
     except Exception as e:
+        logger.error(
+            f"Error processing message from user {message.from_user.id}: {e}",
+            exc_info=True
+        )
         await message.answer(f"Произошла ошибка при обработке запроса: {e}")
         # Удаляем последнее сообщение пользователя из истории при ошибке
         if conversation.messages and conversation.messages[-1]["role"] == "user":
