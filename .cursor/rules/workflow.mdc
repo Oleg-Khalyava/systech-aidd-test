@@ -42,8 +42,8 @@ alwaysApply: true
 
 ### 4. Коммиты
 - После завершения итерации сделать **коммит** в репозиторий
-- Формат сообщения: `iteration N - краткое описание`
-- Пример: `iteration 1 - infrastructure and basic bot`
+- Формат сообщения: `feat: iteration N - краткое описание`
+- Пример: `feat: iteration N - infrastructure and basic bot`
 
 ## Чеклист для каждой задачи
 
