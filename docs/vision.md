@@ -133,7 +133,7 @@ class Conversation:
 ```python
 OPENROUTER_API_KEY = "..."
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-MODEL = "openai/gpt-3.5-turbo"  # или другая модель
+MODEL = "gpt-oss-20b"  # или другая модель
 ```
 
 ### Процесс работы
@@ -197,7 +197,7 @@ TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 # OpenRouter API
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPENROUTER_MODEL=openai/gpt-3.5-turbo
+OPENROUTER_MODEL=gpt-oss-20b
 
 # Bot Settings
 DEFAULT_SYSTEM_PROMPT=Ты полезный AI-ассистент
