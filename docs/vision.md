@@ -1,4 +1,4 @@
-# Техническое видение проекта: LLM-ассистент в виде Telegram-бота
+# Техническое видение проекта: ИИ-Нутрициолог в виде Telegram-бота
 
 ## Технологии
 
@@ -48,8 +48,9 @@ systech-aidd-test/
 │   ├── config.py            # Класс конфигурации
 │   ├── conversation.py      # Класс для управления диалогами (с LRU cache)
 │   ├── user.py              # Класс для управления пользователями (с LRU cache)
+│   ├── role_manager.py      # Управление ролью и системным промптом
 │   ├── dependencies.py      # Dependency Injection контейнер
-│   ├── protocols.py         # Protocol интерфейсы (IUserStorage, ILLMClient)
+│   ├── protocols.py         # Protocol интерфейсы (IUserStorage, ILLMClient, IRoleManager)
 │   ├── metrics.py           # Система метрик и мониторинга
 │   ├── logger.py            # Настройка логирования
 │   ├── handlers/
@@ -62,17 +63,21 @@ systech-aidd-test/
 ├── llm/
 │   ├── __init__.py
 │   └── client.py            # Класс для работы с LLM
+├── prompts/                 # Системные промпты для ролей
+│   └── nutritionist.txt     # Промпт роли Нутрициолога
 ├── tests/
 │   ├── __init__.py
 │   ├── test_config.py       # Тесты конфигурации
 │   ├── test_user.py         # Тесты пользователей
 │   ├── test_conversation.py # Тесты диалогов
+│   ├── test_role_manager.py # Тесты управления ролью
 │   ├── test_integration.py  # Интеграционные тесты
 │   ├── test_rate_limit.py   # Тесты rate limiting
 │   ├── test_dependencies.py # Тесты DI
 │   └── test_metrics.py      # Тесты метрик
 ├── docs/                    # Документация
 │   ├── vision.md            # Техническое видение (этот файл)
+│   ├── idea.md              # Концепция продукта
 │   ├── tasklist.md          # Основной план разработки
 │   ├── tasklist_tech_debt.md # План устранения технического долга
 │   └── code_review_summary.md # Результаты code review
@@ -108,14 +113,15 @@ systech-aidd-test/
 │   - Обработка команд и сообщений        │
 └────────┬────────────────────────────────┘
          │
-         ├──────────────────────┬─────────────────────┐
-         ▼                      ▼                     ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│  UserStorage     │  │ ConversationStorage│  │   LLM Client     │
-│  (LRU + TTL)     │  │  (LRU + TTL)      │  │  (OpenRouter)    │
-└──────────────────┘  └──────────────────┘  └──────────────────┘
-         │                      │                     │
-         └──────────────────────┴─────────────────────┘
+         ├──────────────┬─────────────────┬─────────────────┐
+         ▼              ▼                 ▼                 ▼
+┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+│ UserStorage  │  │Conversation  │  │ RoleManager  │  │  LLM Client  │
+│ (LRU + TTL)  │  │Storage       │  │ (промпты из  │  │ (OpenRouter) │
+│              │  │(LRU + TTL)   │  │  файла)      │  │              │
+└──────────────┘  └──────────────┘  └──────────────┘  └──────────────┘
+         │                │                │                   │
+         └────────────────┴────────────────┴───────────────────┘
                                 │
                                 ▼
                         ┌──────────────────┐
@@ -128,15 +134,16 @@ systech-aidd-test/
 
 #### Основные компоненты
 - **Bot** - инициализация aiogram, polling, маршрутизация
-- **Handlers** - обработка команд (/start, /clear, /stats) и текстовых сообщений
+- **Handlers** - обработка команд (/start, /role, /clear, /help, /stats) и текстовых сообщений
 - **Conversation** - хранение истории диалога с LRU cache и TTL
 - **User** - хранение данных пользователя с LRU cache и TTL
+- **RoleManager** - загрузка и управление системным промптом из файла
 - **LLM Client** - отправка запросов к LLM, получение ответов
 - **Config** - загрузка и хранение конфигурации из .env
 
 #### Новые компоненты (улучшения)
 - **BotDependencies** - Dependency Injection контейнер для зависимостей
-- **Protocols** - Protocol интерфейсы (IUserStorage, IConversationStorage, ILLMClient)
+- **Protocols** - Protocol интерфейсы (IUserStorage, IConversationStorage, ILLMClient, IRoleManager)
 - **Middleware** - промежуточные обработчики для rate limiting и логирования
 - **Metrics** - система сбора метрик (requests, errors, tokens, cost, users)
 
@@ -160,6 +167,18 @@ class User:
 class Conversation:
     chat_id: int             # ID чата
     messages: list           # История сообщений [{role, content}]
+```
+
+### RoleManager (управление ролью)
+```python
+class RoleManager:
+    system_prompt: str       # Системный промпт из файла
+    role_name: str           # Название роли (например, "Нутрициолог")
+    role_description: str    # Описание для команды /role
+
+    def load_system_prompt(file_path: str) -> None
+    def get_role_description() -> str
+    def reload_prompt() -> None
 ```
 
 ### Message (структура сообщения)
@@ -192,7 +211,7 @@ MODEL = "gpt-oss-20b"  # или другая модель
 ### Процесс работы
 1. Получение сообщения от пользователя
 2. Формирование контекста из истории диалога
-3. Добавление системного промпта (роль)
+3. Добавление системного промпта из RoleManager (роль из файла)
 4. Отправка запроса к OpenRouter API через openai client
 5. Получение ответа от LLM
 6. Сохранение в историю диалога
@@ -219,8 +238,9 @@ messages = [
 1. Пользователь отправляет /start
 2. Создается User с данными из Telegram
 3. Создается Conversation для пользователя
-4. Устанавливается роль по умолчанию
-5. Отправляется приветственное сообщение
+4. RoleManager загружает системный промпт из файла (prompts/nutritionist.txt)
+5. Устанавливается роль пользователю
+6. Отправляется приветственное сообщение с описанием роли Нутрициолога
 ```
 
 ### 2. Обычный диалог
@@ -238,7 +258,9 @@ messages = [
 
 ### 3. Команды бота
 - **/start** - инициализация пользователя, приветствие
+- **/role** - отображение текущей роли (Нутрициолог) и компетенций
 - **/clear** - очистка истории диалога
+- **/help** - справка по доступным командам
 - **/stats** - статистика бота (только для админа)
 
 ## Подход к конфигурированию
@@ -254,7 +276,7 @@ OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=gpt-oss-20b
 
 # Bot Settings
-DEFAULT_SYSTEM_PROMPT=Ты полезный AI-ассистент
+SYSTEM_PROMPT_FILE=prompts/nutritionist.txt
 MAX_CONTEXT_MESSAGES=10
 
 # Storage Settings (LRU cache)
@@ -444,8 +466,11 @@ except Exception as e:
 
 ## Связанные документы
 
+- **Концепция продукта:** [idea.md](./idea.md)
 - **Соглашения разработки:** [.cursor/rules/conventions.mdc](../.cursor/rules/conventions.mdc)
+- **QA соглашения:** [.cursor/rules/qa_conventions.mdc](../.cursor/rules/qa_conventions.mdc)
 - **Процесс разработки:** [.cursor/rules/workflow.mdc](../.cursor/rules/workflow.mdc)
+- **TDD процесс:** [.cursor/rules/workflow_tdd.mdc](../.cursor/rules/workflow_tdd.mdc)
 - **План разработки:** [tasklist.md](./tasklist.md)
 - **Технический долг:** [tasklist_tech_debt.md](./tasklist_tech_debt.md)
 - **Code Review:** [code_review_summary.md](./code_review_summary.md)

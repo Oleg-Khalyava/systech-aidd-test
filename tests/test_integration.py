@@ -15,21 +15,13 @@ from src.user import UserStorage
 @pytest.fixture
 def mock_user() -> User:
     """Создает мок пользователя Telegram"""
-    return User(
-        id=123456,
-        is_bot=False,
-        first_name="Test User",
-        username="testuser"
-    )
+    return User(id=123456, is_bot=False, first_name="Test User", username="testuser")
 
 
 @pytest.fixture
 def mock_chat() -> Chat:
     """Создает мок чата Telegram"""
-    return Chat(
-        id=123456,
-        type="private"
-    )
+    return Chat(id=123456, type="private")
 
 
 @pytest.fixture
@@ -52,6 +44,18 @@ def mock_llm_client() -> AsyncMock:
 
 
 @pytest.fixture
+def mock_role_manager() -> MagicMock:
+    """Создает мок менеджера ролей"""
+    role_manager = MagicMock()
+    role_manager.get_system_prompt.return_value = "You are a helpful assistant"
+    role_manager.get_role_description.return_value = (
+        "Ты - профессиональный ИИ-Нутрициолог с глубокими знаниями "
+        "в области правильного питания, диетологии и здорового образа жизни."
+    )
+    return role_manager
+
+
+@pytest.fixture
 def mock_config() -> Config:
     """Создает мок конфигурации"""
     config = MagicMock(spec=Config)
@@ -64,20 +68,22 @@ def mock_config() -> Config:
 
 
 @pytest.fixture
-def dependencies(mock_llm_client: AsyncMock, mock_config: Config) -> BotDependencies:
+def dependencies(
+    mock_llm_client: AsyncMock, mock_role_manager: MagicMock, mock_config: Config
+) -> BotDependencies:
     """Создает контейнер зависимостей для тестов"""
     return BotDependencies(
         user_storage=UserStorage(),
         conversation_storage=ConversationStorage(),
         llm_client=mock_llm_client,
+        role_manager=mock_role_manager,
         config=mock_config,
     )
 
 
 @pytest.mark.asyncio
 async def test_cmd_start_creates_user_and_conversation(
-    mock_message: Message,
-    dependencies: BotDependencies
+    mock_message: Message, dependencies: BotDependencies
 ) -> None:
     """Тест команды /start - создание пользователя и диалога"""
     # Выполняем команду
@@ -104,8 +110,7 @@ async def test_cmd_start_creates_user_and_conversation(
 
 @pytest.mark.asyncio
 async def test_cmd_clear_clears_conversation(
-    mock_message: Message,
-    dependencies: BotDependencies
+    mock_message: Message, dependencies: BotDependencies
 ) -> None:
     """Тест команды /clear - очистка истории диалога"""
     # Создаем диалог с сообщениями
@@ -129,9 +134,7 @@ async def test_cmd_clear_clears_conversation(
 
 @pytest.mark.asyncio
 async def test_message_handler_full_flow(
-    mock_message: Message,
-    dependencies: BotDependencies,
-    mock_llm_client: AsyncMock
+    mock_message: Message, dependencies: BotDependencies, mock_llm_client: AsyncMock
 ) -> None:
     """Тест полного flow обработки сообщения"""
     # Выполняем обработку сообщения
@@ -159,9 +162,7 @@ async def test_message_handler_full_flow(
 
 @pytest.mark.asyncio
 async def test_message_handler_with_context(
-    mock_message: Message,
-    dependencies: BotDependencies,
-    mock_llm_client: AsyncMock
+    mock_message: Message, dependencies: BotDependencies, mock_llm_client: AsyncMock
 ) -> None:
     """Тест обработки сообщения с учетом контекста"""
     # Создаем диалог с предыдущими сообщениями
@@ -187,15 +188,11 @@ async def test_message_handler_with_context(
 
 @pytest.mark.asyncio
 async def test_message_handler_llm_error(
-    mock_message: Message,
-    dependencies: BotDependencies,
-    mock_llm_client: AsyncMock
+    mock_message: Message, dependencies: BotDependencies, mock_llm_client: AsyncMock
 ) -> None:
     """Тест обработки ошибки LLM"""
     # Настраиваем LLM клиент на ошибку
-    mock_llm_client.send_message = AsyncMock(
-        side_effect=Exception("LLM API error")
-    )
+    mock_llm_client.send_message = AsyncMock(side_effect=Exception("LLM API error"))
 
     # Выполняем обработку
     await message_handler(mock_message, dependencies)
@@ -211,9 +208,7 @@ async def test_message_handler_llm_error(
 
 
 @pytest.mark.asyncio
-async def test_message_handler_without_user(
-    dependencies: BotDependencies
-) -> None:
+async def test_message_handler_without_user(dependencies: BotDependencies) -> None:
     """Тест обработки сообщения без from_user"""
     message = MagicMock(spec=Message)
     message.from_user = None
@@ -228,8 +223,7 @@ async def test_message_handler_without_user(
 
 @pytest.mark.asyncio
 async def test_message_handler_validation_too_long(
-    mock_message: Message,
-    dependencies: BotDependencies
+    mock_message: Message, dependencies: BotDependencies
 ) -> None:
     """Тест валидации - слишком длинное сообщение"""
     # Создаем очень длинное сообщение (>4000 символов)
@@ -251,8 +245,7 @@ async def test_message_handler_validation_too_long(
 
 @pytest.mark.asyncio
 async def test_message_handler_validation_empty(
-    mock_message: Message,
-    dependencies: BotDependencies
+    mock_message: Message, dependencies: BotDependencies
 ) -> None:
     """Тест валидации - пустое сообщение"""
     mock_message.text = ""
@@ -265,3 +258,38 @@ async def test_message_handler_validation_empty(
     error_message = mock_message.answer.call_args[0][0]
     assert "пуст" in error_message.lower()  # "пустым" или "пустое"
 
+
+@pytest.mark.asyncio
+async def test_cmd_role_shows_description(
+    mock_message: Message, dependencies: BotDependencies
+) -> None:
+    """🔴 RED: Тест команды /role - показ описания роли"""
+    # Импортируем cmd_role (который еще не существует)
+    from src.handlers.handlers import cmd_role
+
+    # Выполняем команду
+    await cmd_role(mock_message, dependencies)
+
+    # Проверяем что ответ содержит описание роли
+    mock_message.answer.assert_called_once()
+    response = mock_message.answer.call_args[0][0]
+    assert "Нутрициолог" in response
+    assert "питани" in response.lower()
+
+
+@pytest.mark.asyncio
+async def test_cmd_help_shows_commands(mock_message: Message) -> None:
+    """🔴 RED: Тест команды /help - показ списка команд"""
+    # Импортируем cmd_help (который еще не существует)
+    from src.handlers.handlers import cmd_help
+
+    # Выполняем команду
+    await cmd_help(mock_message)
+
+    # Проверяем что ответ содержит список команд
+    mock_message.answer.assert_called_once()
+    response = mock_message.answer.call_args[0][0]
+    assert "/start" in response
+    assert "/clear" in response
+    assert "/role" in response
+    assert "/help" in response

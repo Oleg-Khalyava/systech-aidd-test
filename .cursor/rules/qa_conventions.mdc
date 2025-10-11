@@ -1,0 +1,410 @@
+---
+alwaysApply: true
+---
+# QA Automation Conventions
+
+## Принципы тестирования
+
+### Тестируй только важное
+- ✅ **Бизнес-логику** - основной функционал
+- ✅ **Критичные потоки** - сценарии использования
+- ✅ **Edge cases** - граничные условия
+- ❌ **Не тестируй** boilerplate (getters/setters, конструкторы dataclass)
+- ❌ **Не тестируй** внешние библиотеки (aiogram, OpenAI)
+- ❌ **Не тестируй** приватные методы напрямую
+
+### KISS для тестов
+- Один тест = одна проверка
+- Явное лучше неявного
+- Простые assertions без магии
+- Минимум моков - только для внешних зависимостей
+
+### DRY для тестов
+- Общие фикстуры в `conftest.py`
+- Фабричные функции для тестовых данных
+- Параметризация вместо дублирования
+
+---
+
+## Структура тестов
+
+### Naming Convention
+```python
+# Файлы: test_<module_name>.py
+tests/test_conversation.py
+tests/test_user.py
+
+# Функции: test_<what>_<condition>_<expected>
+def test_add_message_success():
+def test_add_message_exceeds_limit_raises_error():
+def test_get_user_not_found_returns_none():
+```
+
+### Arrange-Act-Assert
+```python
+def test_conversation_add_message():
+    # Arrange - подготовка
+    conversation = Conversation(chat_id=123)
+
+    # Act - действие
+    conversation.add_message("user", "Hello")
+
+    # Assert - проверка
+    assert len(conversation.messages) == 1
+    assert conversation.messages[0]["role"] == "user"
+```
+
+---
+
+## TDD Workflow
+
+### Red-Green-Refactor
+1. **Red** - пиши тест, который падает
+2. **Green** - напиши минимум кода для прохождения
+3. **Refactor** - улучши код, тесты должны проходить
+
+### Цикл TDD
+```bash
+# 1. Напиши тест
+def test_rate_limit_blocks_fast_requests():
+    # Test code...
+
+# 2. Запусти тест - должен упасть
+make test
+
+# 3. Реализуй минимум функционала
+# ... код ...
+
+# 4. Запусти тест - должен пройти
+make test
+
+# 5. Рефакторинг при необходимости
+# 6. Повтори для следующей фичи
+```
+
+### Когда писать тесты
+- **Перед** реализацией новой фичи (TDD)
+- **После** обнаружения бага (regression test)
+- **Никогда** для уже работающего простого кода без багов
+
+---
+
+## Типы тестов
+
+### Unit Tests (основное)
+- Тестируют отдельный класс/функцию
+- Мокают внешние зависимости (Protocol)
+- Быстрые (< 1 sec на тест)
+
+```python
+def test_user_is_active_true():
+    """Unit: проверка активности пользователя"""
+    user = User(chat_id=123, username="test", first_name="Test")
+    assert user.is_active is True
+```
+
+### Integration Tests (минимум)
+- Тестируют взаимодействие компонентов
+- Только для критичных flow
+- Мокают только внешние API
+
+```python
+@pytest.mark.asyncio
+async def test_message_flow_with_llm():
+    """Integration: полный flow обработки сообщения"""
+    # Mock только LLM API
+    with patch('llm.client.LLMClient') as mock_llm:
+        mock_llm.return_value.send_message.return_value = "Response"
+        # Тестируем реальное взаимодействие handler + storage + conversation
+        ...
+```
+
+### E2E Tests (опционально)
+- Только для критичных user journeys
+- Дорогие в поддержке - избегай
+
+---
+
+## Fixtures и Mocks
+
+### Fixtures (conftest.py)
+```python
+# tests/conftest.py
+import pytest
+from src.user import User
+from src.conversation import Conversation
+
+@pytest.fixture
+def sample_user() -> User:
+    """Стандартный пользователь для тестов"""
+    return User(chat_id=123, username="test_user", first_name="Test")
+
+@pytest.fixture
+def sample_conversation() -> Conversation:
+    """Пустой диалог для тестов"""
+    return Conversation(chat_id=123)
+
+# ❌ Не создавай fixture для каждого edge case
+```
+
+### Параметризация вместо дублирования
+```python
+# ✅ Правильно - параметризация
+@pytest.mark.parametrize("text,expected", [
+    ("", False),           # пустая строка
+    ("   ", False),        # только пробелы
+    ("Hello", True),       # валидный текст
+])
+def test_validate_message(text: str, expected: bool):
+    assert validate_message(text) == expected
+
+# ❌ Неправильно - дублирование
+def test_validate_message_empty():
+    assert validate_message("") is False
+def test_validate_message_spaces():
+    assert validate_message("   ") is False
+def test_validate_message_valid():
+    assert validate_message("Hello") is True
+```
+
+### Mock только внешние зависимости
+```python
+# ✅ Правильно - мок внешнего API
+@pytest.fixture
+def mock_llm_client():
+    with patch('llm.client.LLMClient') as mock:
+        mock.return_value.send_message.return_value = "Mocked response"
+        yield mock.return_value
+
+# ❌ Неправильно - мок своего кода
+@pytest.fixture
+def mock_conversation():  # Используй реальный Conversation!
+    mock = MagicMock()
+    mock.add_message.return_value = None
+    return mock
+```
+
+---
+
+## Assertions
+
+### Простые и явные
+```python
+# ✅ Правильно
+assert user.chat_id == 123
+assert len(messages) == 2
+assert result is None
+assert "error" in response
+
+# ❌ Неправильно - сложные проверки
+assert all([msg["role"] in ["user", "assistant"] for msg in messages])  # Упрости!
+```
+
+### Проверяй поведение, не реализацию
+```python
+# ✅ Правильно - проверка результата
+def test_add_message_stores_correctly():
+    conversation.add_message("user", "Hello")
+    assert conversation.get_messages()[0]["content"] == "Hello"
+
+# ❌ Неправильно - проверка реализации
+def test_add_message_appends_to_list():
+    conversation.add_message("user", "Hello")
+    assert len(conversation._messages) == 1  # Приватная деталь!
+```
+
+---
+
+## Async тесты
+
+```python
+import pytest
+
+# ✅ Правильно - pytest-asyncio
+@pytest.mark.asyncio
+async def test_async_handler():
+    result = await some_async_function()
+    assert result == expected
+
+# Mock async функций
+@pytest.fixture
+def mock_async_client():
+    with patch('src.client.AsyncClient') as mock:
+        mock.return_value.request = AsyncMock(return_value="response")
+        yield mock.return_value
+```
+
+---
+
+## Что НЕ тестировать
+
+### Boilerplate код
+```python
+# ❌ Не тестируй dataclass конструкторы
+@dataclass
+class User:
+    chat_id: int
+    username: str
+
+# НЕ НУЖЕН тест:
+def test_user_creation():
+    user = User(chat_id=123, username="test")
+    assert user.chat_id == 123  # Это делает dataclass!
+```
+
+### Внешние библиотеки
+```python
+# ❌ Не тестируй aiogram
+def test_message_answer():
+    # Не проверяй, что message.answer() вызывает Telegram API
+    # aiogram уже протестирован!
+
+# ❌ Не тестируй OpenAI SDK
+def test_openai_chat_completion():
+    # OpenAI SDK протестирован его разработчиками
+```
+
+### Приватные методы
+```python
+# ❌ Не тестируй приватные методы напрямую
+def test_cleanup_old_conversations():  # НЕ НУЖЕН!
+    storage._cleanup_old()  # Приватный метод!
+
+# ✅ Тестируй через публичный API
+def test_storage_removes_expired():
+    storage.add(conversation)
+    time.sleep(TTL + 1)
+    assert storage.get(chat_id) is None  # _cleanup вызван внутри
+```
+
+### Тривиальный код
+```python
+# ❌ Не тестируй геттеры
+def test_get_chat_id():
+    user = User(chat_id=123, ...)
+    assert user.chat_id == 123  # Очевидно!
+```
+
+---
+
+## Coverage
+
+### Целевое покрытие
+- **Минимум**: 80% общего покрытия
+- **Цель**: 90%+ для бизнес-логики
+- **Игнорируй**:
+  - `main.py` (точка входа)
+  - `__init__.py`
+  - Type stubs (Protocol)
+
+### Проверка покрытия
+```bash
+make test-cov       # Запуск с coverage
+coverage report     # Отчет в консоли
+coverage html       # HTML отчет в htmlcov/
+```
+
+### Coverage не равно качество
+- ✅ 80% с хорошими тестами > 100% с плохими
+- ✅ Тестируй критичные пути, не гонись за 100%
+- ❌ Не пиши тесты только ради coverage
+
+---
+
+## Команды
+
+```bash
+make test           # Запуск всех тестов
+make test-cov       # Тесты + coverage
+make test-watch     # Автоперезапуск (если настроен)
+pytest tests/test_user.py -v  # Один файл
+pytest tests/ -k "conversation"  # По имени
+pytest tests/ -x    # Остановка на первой ошибке
+```
+
+---
+
+## Checklist для теста
+
+- [ ] Тест проверяет **важное поведение**, не boilerplate?
+- [ ] Имя теста ясно описывает **что тестируется**?
+- [ ] Тест **независим** от других тестов?
+- [ ] Используется **минимум моков**?
+- [ ] Assertions **простые и явные**?
+- [ ] Тест **быстрый** (< 1 sec)?
+- [ ] Тест **читаемый** без комментариев?
+
+---
+
+## Примеры хороших тестов
+
+### Unit Test
+```python
+def test_conversation_get_messages_formats_correctly(sample_conversation):
+    """Unit: форматирование сообщений для LLM API"""
+    sample_conversation.add_message("user", "Hello")
+    sample_conversation.add_message("assistant", "Hi")
+
+    messages = sample_conversation.get_messages()
+
+    assert len(messages) == 2
+    assert messages[0] == {"role": "user", "content": "Hello"}
+    assert messages[1] == {"role": "assistant", "content": "Hi"}
+```
+
+### Edge Case Test
+```python
+def test_rate_limit_allows_after_delay(sample_user):
+    """Edge: rate limit разрешает запрос после задержки"""
+    middleware = RateLimitMiddleware(rate_limit=2)
+
+    middleware.check(sample_user.chat_id)  # Первый запрос
+    time.sleep(2.1)  # Ждем > rate_limit
+
+    # Должен разрешить
+    assert middleware.check(sample_user.chat_id) is True
+```
+
+### Integration Test
+```python
+@pytest.mark.asyncio
+async def test_full_message_flow(mock_llm_client):
+    """Integration: полный цикл обработки сообщения"""
+    # Arrange
+    deps = create_test_dependencies(llm_client=mock_llm_client)
+    message = create_test_message(text="Hello bot")
+
+    # Act
+    await message_handler(message, deps=deps)
+
+    # Assert
+    mock_llm_client.send_message.assert_called_once()
+    assert deps.conversation_storage.get(123) is not None
+```
+
+---
+
+## Рефакторинг тестов
+
+### Признаки плохого теста
+- 🔴 Слишком длинный (> 20 строк) → Разбей на несколько
+- 🔴 Проверяет несколько вещей → Один тест = одна проверка
+- 🔴 Неясное имя → Переименуй
+- 🔴 Требует комментариев → Упрости
+- 🔴 Много моков → Пересмотри архитектуру
+
+### Когда удалять тесты
+- ✅ Тест проверяет удаленную фичу
+- ✅ Тест дублирует другой тест
+- ✅ Тест не добавляет ценности (trivial assertion)
+- ✅ Тест постоянно падает без причины (flaky test)
+
+**Не бойся удалять плохие тесты** - качество важнее количества!
+
+---
+
+## Референс
+
+- Основные соглашения: [conventions.mdc](./conventions.mdc)
+- Процесс разработки: [workflow.mdc](./workflow.mdc)
+- Архитектура: [vision.md](../../docs/vision.md)

@@ -25,16 +25,12 @@ def setup_logger() -> logging.Logger:
 
     # Формат записи
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # Файловый handler с ротацией (10MB, 5 файлов)
     file_handler = RotatingFileHandler(
-        logs_dir / "bot.log",
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-        encoding="utf-8"
+        logs_dir / "bot.log", maxBytes=10 * 1024 * 1024, backupCount=5, encoding="utf-8"  # 10MB
     )
     file_handler.setLevel(logging.INFO)
     file_handler.setFormatter(formatter)
@@ -49,4 +45,3 @@ def setup_logger() -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
-

@@ -133,4 +133,3 @@ class ConversationStorage:
             # Перемещаем в конец (обновляем LRU)
             self._conversations.move_to_end(chat_id)
         return conversation
-

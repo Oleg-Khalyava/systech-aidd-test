@@ -54,5 +54,3 @@ class MessageValidator:
 
         # Сообщение валидно
         return True, None
-
-

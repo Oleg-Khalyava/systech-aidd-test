@@ -18,13 +18,13 @@ def clear_env_vars(monkeypatch):
         "OPENROUTER_MODEL",
         "DEFAULT_SYSTEM_PROMPT",
         "MAX_CONTEXT_MESSAGES",
-        "WELCOME_MESSAGE"
+        "WELCOME_MESSAGE",
     ]
     for var in env_vars:
         monkeypatch.delenv(var, raising=False)
 
     # Мокаем load_dotenv чтобы она не загружала переменные из .env файла
-    with patch('src.config.load_dotenv'):
+    with patch("src.config.load_dotenv"):
         yield
 
 
@@ -46,6 +46,7 @@ def test_config_load_with_valid_env(monkeypatch):
     assert config.openrouter_base_url == "https://api.test.com"
     assert config.openrouter_model == "test-model"
     assert config.default_system_prompt == "Test prompt"
+    assert config.system_prompt_file == "prompts/nutritionist.txt"
     assert config.max_context_messages == 20
     assert config.welcome_message == "Test welcome"
 
@@ -63,6 +64,7 @@ def test_config_load_with_default_values(monkeypatch):
     assert config.openrouter_base_url == "https://openrouter.ai/api/v1"
     assert config.openrouter_model == "gpt-oss-20b"
     assert config.default_system_prompt == "Ты полезный AI-ассистент"
+    assert config.system_prompt_file == "prompts/nutritionist.txt"
     assert config.max_context_messages == 10
     assert "AI-ассистент" in config.welcome_message
 

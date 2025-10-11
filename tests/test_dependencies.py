@@ -31,6 +31,15 @@ def mock_llm_client() -> AsyncMock:
 
 
 @pytest.fixture
+def mock_role_manager() -> MagicMock:
+    """Создает мок менеджера ролей"""
+    role_manager = MagicMock()
+    role_manager.get_system_prompt.return_value = "You are helpful"
+    role_manager.get_role_description.return_value = "AI Assistant"
+    return role_manager
+
+
+@pytest.fixture
 def mock_config() -> Config:
     """Создает мок конфигурации"""
     config = MagicMock(spec=Config)
@@ -45,13 +54,15 @@ def dependencies(
     mock_user_storage: UserStorage,
     mock_conversation_storage: ConversationStorage,
     mock_llm_client: AsyncMock,
-    mock_config: Config
+    mock_role_manager: MagicMock,
+    mock_config: Config,
 ) -> BotDependencies:
     """Создает контейнер зависимостей"""
     return BotDependencies(
         user_storage=mock_user_storage,
         conversation_storage=mock_conversation_storage,
         llm_client=mock_llm_client,
+        role_manager=mock_role_manager,
         config=mock_config,
     )
 
@@ -61,6 +72,7 @@ def test_bot_dependencies_creation(dependencies: BotDependencies) -> None:
     assert dependencies.user_storage is not None
     assert dependencies.conversation_storage is not None
     assert dependencies.llm_client is not None
+    assert dependencies.role_manager is not None
     assert dependencies.config is not None
 
 
@@ -68,10 +80,7 @@ def test_bot_dependencies_user_storage(dependencies: BotDependencies) -> None:
     """Тест доступа к user_storage через dependencies"""
     # Создаем пользователя
     user = dependencies.user_storage.get_or_create(
-        chat_id=123,
-        username="test",
-        first_name="Test",
-        default_role="role"
+        chat_id=123, username="test", first_name="Test", default_role="role"
     )
 
     # Проверяем что он сохранен
@@ -113,9 +122,7 @@ def mock_message() -> Message:
 
 @pytest.mark.asyncio
 async def test_dependency_injection_middleware_injects_dependencies(
-    dependencies: BotDependencies,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    dependencies: BotDependencies, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что middleware добавляет dependencies в data"""
     middleware = DependencyInjectionMiddleware(dependencies)
@@ -134,9 +141,7 @@ async def test_dependency_injection_middleware_injects_dependencies(
 
 @pytest.mark.asyncio
 async def test_dependency_injection_middleware_passes_through(
-    dependencies: BotDependencies,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    dependencies: BotDependencies, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что middleware пропускает событие дальше"""
     middleware = DependencyInjectionMiddleware(dependencies)
@@ -154,9 +159,7 @@ async def test_dependency_injection_middleware_passes_through(
 
 @pytest.mark.asyncio
 async def test_dependency_injection_middleware_immutable_dependencies(
-    dependencies: BotDependencies,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    dependencies: BotDependencies, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что dependencies одни и те же при нескольких вызовах"""
     middleware = DependencyInjectionMiddleware(dependencies)
@@ -172,5 +175,3 @@ async def test_dependency_injection_middleware_immutable_dependencies(
     # Проверяем что это один и тот же объект dependencies
     assert data1["deps"] is data2["deps"]
     assert data1["deps"] is dependencies
-
-

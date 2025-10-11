@@ -16,6 +16,7 @@ class Config:
         openrouter_base_url: Базовый URL OpenRouter API
         openrouter_model: Модель LLM для использования
         default_system_prompt: Системный промпт по умолчанию
+        system_prompt_file: Путь к файлу с системным промптом
         max_context_messages: Максимальное количество сообщений в контексте
         welcome_message: Текст приветственного сообщения
         max_storage_size: Максимальное количество записей в storage (LRU)
@@ -27,6 +28,7 @@ class Config:
     openrouter_base_url: str
     openrouter_model: str
     default_system_prompt: str
+    system_prompt_file: str
     max_context_messages: int
     welcome_message: str
     max_storage_size: int
@@ -60,9 +62,7 @@ class Config:
         # Параметры с значениями по умолчанию
         base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
         model = os.getenv("OPENROUTER_MODEL", "gpt-oss-20b")
-        system_prompt = os.getenv(
-            "DEFAULT_SYSTEM_PROMPT", "Ты полезный AI-ассистент"
-        )
+        system_prompt = os.getenv("DEFAULT_SYSTEM_PROMPT", "Ты полезный AI-ассистент")
 
         # Валидация числовых параметров
         max_messages_str = os.getenv("MAX_CONTEXT_MESSAGES", "10")
@@ -72,13 +72,18 @@ class Config:
                 raise ValueError("MAX_CONTEXT_MESSAGES must be greater than 0")
         except ValueError as e:
             if "invalid literal" in str(e):
-                raise ValueError(f"MAX_CONTEXT_MESSAGES must be a valid integer, got: {max_messages_str}")
+                raise ValueError(
+                    f"MAX_CONTEXT_MESSAGES must be a valid integer, got: {max_messages_str}"
+                )
             raise
 
         welcome_msg = os.getenv(
             "WELCOME_MESSAGE",
-            "я AI-ассистент на базе LLM. Задавай любые вопросы, и я постараюсь помочь!"
+            "я AI-ассистент на базе LLM. Задавай любые вопросы, и я постараюсь помочь!",
         )
+
+        # Путь к файлу системного промпта
+        prompt_file = os.getenv("SYSTEM_PROMPT_FILE", "prompts/nutritionist.txt")
 
         # Параметры для управления памятью
         max_storage_str = os.getenv("MAX_STORAGE_SIZE", "1000")
@@ -88,7 +93,9 @@ class Config:
                 raise ValueError("MAX_STORAGE_SIZE must be greater than 0")
         except ValueError as e:
             if "invalid literal" in str(e):
-                raise ValueError(f"MAX_STORAGE_SIZE must be a valid integer, got: {max_storage_str}")
+                raise ValueError(
+                    f"MAX_STORAGE_SIZE must be a valid integer, got: {max_storage_str}"
+                )
             raise
 
         storage_ttl_str = os.getenv("STORAGE_TTL_HOURS", "24")
@@ -98,7 +105,9 @@ class Config:
                 raise ValueError("STORAGE_TTL_HOURS must be greater than 0")
         except ValueError as e:
             if "invalid literal" in str(e):
-                raise ValueError(f"STORAGE_TTL_HOURS must be a valid integer, got: {storage_ttl_str}")
+                raise ValueError(
+                    f"STORAGE_TTL_HOURS must be a valid integer, got: {storage_ttl_str}"
+                )
             raise
 
         return cls(
@@ -107,9 +116,9 @@ class Config:
             openrouter_base_url=base_url,
             openrouter_model=model,
             default_system_prompt=system_prompt,
+            system_prompt_file=prompt_file,
             max_context_messages=max_messages,
             welcome_message=welcome_msg,
             max_storage_size=max_storage,
             storage_ttl_hours=storage_ttl,
         )
-

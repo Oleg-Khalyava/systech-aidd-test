@@ -12,21 +12,13 @@ from src.middlewares.rate_limit import RateLimitMiddleware
 @pytest.fixture
 def mock_user() -> User:
     """Создает мок пользователя"""
-    return User(
-        id=12345,
-        is_bot=False,
-        first_name="Test",
-        username="testuser"
-    )
+    return User(id=12345, is_bot=False, first_name="Test", username="testuser")
 
 
 @pytest.fixture
 def mock_chat() -> Chat:
     """Создает мок чата"""
-    return Chat(
-        id=12345,
-        type="private"
-    )
+    return Chat(id=12345, type="private")
 
 
 @pytest.fixture
@@ -54,9 +46,7 @@ def middleware() -> RateLimitMiddleware:
 
 @pytest.mark.asyncio
 async def test_rate_limit_first_message_passes(
-    middleware: RateLimitMiddleware,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    middleware: RateLimitMiddleware, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что первое сообщение пропускается"""
     # Первое сообщение должно пройти
@@ -70,9 +60,7 @@ async def test_rate_limit_first_message_passes(
 
 @pytest.mark.asyncio
 async def test_rate_limit_blocks_rapid_messages(
-    middleware: RateLimitMiddleware,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    middleware: RateLimitMiddleware, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что быстрые сообщения блокируются"""
     # Первое сообщение
@@ -93,8 +81,7 @@ async def test_rate_limit_blocks_rapid_messages(
 
 @pytest.mark.asyncio
 async def test_rate_limit_allows_after_timeout(
-    mock_handler: AsyncMock,
-    mock_message: Message
+    mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что сообщение пропускается после истечения лимита"""
     # Создаем middleware с очень коротким лимитом
@@ -117,9 +104,7 @@ async def test_rate_limit_allows_after_timeout(
 
 @pytest.mark.asyncio
 async def test_rate_limit_different_users(
-    middleware: RateLimitMiddleware,
-    mock_handler: AsyncMock,
-    mock_chat: Chat
+    middleware: RateLimitMiddleware, mock_handler: AsyncMock, mock_chat: Chat
 ) -> None:
     """Тест что разные пользователи не влияют друг на друга"""
     # Создаем сообщения от разных пользователей
@@ -148,8 +133,7 @@ async def test_rate_limit_different_users(
 
 @pytest.mark.asyncio
 async def test_rate_limit_without_user(
-    middleware: RateLimitMiddleware,
-    mock_handler: AsyncMock
+    middleware: RateLimitMiddleware, mock_handler: AsyncMock
 ) -> None:
     """Тест обработки сообщения без from_user"""
     message = MagicMock(spec=Message)
@@ -188,9 +172,7 @@ async def test_rate_limit_custom_limit() -> None:
 
 @pytest.mark.asyncio
 async def test_rate_limit_message_content_in_warning(
-    middleware: RateLimitMiddleware,
-    mock_handler: AsyncMock,
-    mock_message: Message
+    middleware: RateLimitMiddleware, mock_handler: AsyncMock, mock_message: Message
 ) -> None:
     """Тест что предупреждение содержит информацию о времени ожидания"""
     # Первое сообщение
@@ -203,4 +185,3 @@ async def test_rate_limit_message_content_in_warning(
     mock_message.answer.assert_called_once()
     warning = mock_message.answer.call_args[0][0]
     assert "секунд" in warning.lower() or "подожд" in warning.lower()
-

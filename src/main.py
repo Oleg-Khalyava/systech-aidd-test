@@ -14,6 +14,7 @@ from src.dependencies import BotDependencies
 from src.handlers.handlers import router
 from src.logger import setup_logger
 from src.middlewares import DependencyInjectionMiddleware, RateLimitMiddleware
+from src.role_manager import RoleManager
 from src.user import UserStorage
 
 # Настройка логгера
@@ -43,8 +44,7 @@ async def start_with_retry(bot: TelegramBot) -> None:
         except TelegramNetworkError as e:
             retries += 1
             logger.warning(
-                f"Telegram network error (attempt {retries}/{MAX_RETRIES}): {e}",
-                exc_info=True
+                f"Telegram network error (attempt {retries}/{MAX_RETRIES}): {e}", exc_info=True
             )
             if retries < MAX_RETRIES:
                 logger.info(f"Retrying in {RETRY_DELAY} seconds...")
@@ -71,13 +71,9 @@ async def main() -> None:
         f"Initializing storages (max_size={config.max_storage_size}, "
         f"ttl={config.storage_ttl_hours}h)..."
     )
-    user_storage = UserStorage(
-        max_size=config.max_storage_size,
-        ttl_hours=config.storage_ttl_hours
-    )
+    user_storage = UserStorage(max_size=config.max_storage_size, ttl_hours=config.storage_ttl_hours)
     conversation_storage = ConversationStorage(
-        max_size=config.max_storage_size,
-        ttl_hours=config.storage_ttl_hours
+        max_size=config.max_storage_size, ttl_hours=config.storage_ttl_hours
     )
 
     # Инициализация LLM клиента
@@ -88,12 +84,23 @@ async def main() -> None:
         model=config.openrouter_model,
     )
 
+    # Инициализация менеджера ролей
+    logger.info(f"Initializing role manager from: {config.system_prompt_file}")
+    try:
+        role_manager = RoleManager(config.system_prompt_file)
+        logger.info("Role manager initialized successfully")
+    except (FileNotFoundError, ValueError) as e:
+        logger.error(f"Failed to initialize role manager: {e}")
+        print(f"Role manager initialization error: {e}")
+        sys.exit(1)
+
     # Создание контейнера зависимостей
     logger.info("Setting up dependency injection...")
     dependencies = BotDependencies(
         user_storage=user_storage,
         conversation_storage=conversation_storage,
         llm_client=llm_client,
+        role_manager=role_manager,
         config=config,
     )
 
@@ -154,4 +161,3 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
-

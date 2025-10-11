@@ -194,5 +194,3 @@ def test_metrics_workflow(metrics: BotMetrics) -> None:
     stats = metrics.get_stats()
     assert stats["total_requests"] == 10
     assert "20.00%" in stats["error_rate"]
-
-

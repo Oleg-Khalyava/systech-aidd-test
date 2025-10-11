@@ -136,5 +136,3 @@ class BotMetrics:
         self.total_tokens = 0
         self.total_cost = 0.0
         self.active_users = set()
-
-

@@ -17,6 +17,7 @@ class User:
         created_at: Время создания пользователя
         last_accessed: Время последнего доступа
     """
+
     chat_id: int
     username: str | None
     first_name: str
@@ -51,9 +52,7 @@ class UserStorage:
 
         # Собираем ключи для удаления
         keys_to_delete = [
-            chat_id
-            for chat_id, user in self._users.items()
-            if now - user.last_accessed > ttl_delta
+            chat_id for chat_id, user in self._users.items() if now - user.last_accessed > ttl_delta
         ]
 
         # Удаляем устаревших пользователей
@@ -119,4 +118,3 @@ class UserStorage:
             # Перемещаем в конец (обновляем LRU)
             self._users.move_to_end(chat_id)
         return user
-

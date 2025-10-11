@@ -44,10 +44,7 @@ def test_conversation_get_context_simple():
     conversation.add_message("user", "Hello")
     conversation.add_message("assistant", "Hi!")
 
-    context = conversation.get_context(
-        max_messages=10,
-        system_prompt="You are a helpful assistant"
-    )
+    context = conversation.get_context(max_messages=10, system_prompt="You are a helpful assistant")
 
     assert len(context) == 3  # system + 2 messages
     assert context[0] == {"role": "system", "content": "You are a helpful assistant"}
@@ -64,10 +61,7 @@ def test_conversation_get_context_with_limit():
         conversation.add_message("user", f"Message {i}")
 
     # Запрашиваем только последние 2
-    context = conversation.get_context(
-        max_messages=2,
-        system_prompt="System"
-    )
+    context = conversation.get_context(max_messages=2, system_prompt="System")
 
     # system + 2 последних сообщения
     assert len(context) == 3
@@ -82,10 +76,7 @@ def test_conversation_get_context_limit_greater_than_messages():
 
     conversation.add_message("user", "Hello")
 
-    context = conversation.get_context(
-        max_messages=100,
-        system_prompt="System"
-    )
+    context = conversation.get_context(max_messages=100, system_prompt="System")
 
     assert len(context) == 2  # system + 1 message
 
@@ -202,10 +193,7 @@ def test_conversation_get_context_preserves_order():
     conversation.add_message("user", "Third")
     conversation.add_message("assistant", "Fourth")
 
-    context = conversation.get_context(
-        max_messages=4,
-        system_prompt="System"
-    )
+    context = conversation.get_context(max_messages=4, system_prompt="System")
 
     assert context[1]["content"] == "First"
     assert context[2]["content"] == "Second"
@@ -217,10 +205,7 @@ def test_conversation_empty_get_context():
     """Тест получения контекста из пустого диалога"""
     conversation = Conversation(chat_id=123456)
 
-    context = conversation.get_context(
-        max_messages=10,
-        system_prompt="System prompt"
-    )
+    context = conversation.get_context(max_messages=10, system_prompt="System prompt")
 
     assert len(context) == 1
     assert context[0] == {"role": "system", "content": "System prompt"}
@@ -302,4 +287,3 @@ def test_conversation_storage_ttl_with_recent_access():
     assert result is not None
     assert result.chat_id == 1
     assert len(result.messages) == 1
-

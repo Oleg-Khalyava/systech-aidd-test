@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+alwaysApply: true
 ---
 # Соглашения по разработке
 
@@ -63,13 +63,13 @@ def process_message(user_id, text):
 # ✅ Правильно
 def send_message(self, messages: list[dict]) -> str:
     """Отправка сообщения в LLM
-    
+
     Args:
         messages: История сообщений в формате OpenAI
-        
+
     Returns:
         str: Ответ от LLM
-        
+
     Raises:
         Exception: При ошибках API
     """
@@ -230,7 +230,7 @@ class ConversationStorage:
     def __init__(self, max_size: int = 1000):
         self._conversations: OrderedDict = OrderedDict()
         self._max_size = max_size
-    
+
     def get_or_create(self, chat_id: int) -> Conversation:
         # Удаляем старые при превышении
         if len(self._conversations) >= self._max_size:
@@ -409,7 +409,7 @@ class RateLimitMiddleware(BaseMiddleware):
     def __init__(self, rate_limit: int = 2):
         self.rate_limit = rate_limit
         self.last_request: Dict[int, float] = {}
-    
+
     async def __call__(
         self,
         handler: Callable,

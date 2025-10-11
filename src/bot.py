@@ -27,4 +27,3 @@ class TelegramBot:
     async def stop(self) -> None:
         """Остановка бота"""
         await self.bot.session.close()
-

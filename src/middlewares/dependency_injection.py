@@ -52,5 +52,3 @@ class DependencyInjectionMiddleware(BaseMiddleware):
 
         # Передаем управление следующему обработчику
         return await handler(event, data)
-
-

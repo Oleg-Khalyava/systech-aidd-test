@@ -76,4 +76,3 @@ class RateLimitMiddleware(BaseMiddleware):
 
         # Пропускаем сообщение дальше
         return await handler(event, data)
-
