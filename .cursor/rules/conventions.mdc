@@ -1,7 +1,5 @@
 ---
-description:
-globs:
-alwaysApply: true
+alwaysApply: false
 ---
 # Соглашения по разработке
 
@@ -14,55 +12,473 @@ alwaysApply: true
 - Никаких избыточных абстракций и паттернов проектирования
 - Если можно решить проще - решай проще
 
+### SOLID принципы
+- **Single Responsibility** - один класс = одна ответственность
+- **Dependency Inversion** - зависимость от абстракций (Protocol), не от конкретики
+- **Interface Segregation** - минимальные интерфейсы (Protocol)
+- Не применяй SOLID избыточно - только где это упрощает код
+
 ### Структура кода
 - **1 класс = 1 файл** (строго)
 - Имя файла = имя класса в snake_case
 - ООП подход - использование классов для организации логики
+- Middleware в отдельных файлах в `src/middlewares/`
 
 ### Зависимости
 - Минимум внешних библиотек
 - Только те библиотеки, которые указаны в [vision.md](./vision.md)
 - Не добавляй новые зависимости без необходимости
+- Используй Protocol для определения интерфейсов вместо ABC
+
+---
 
 ## Правила кодирования
 
 ### Python код
-- Форматирование: **black** (по умолчанию)
+- **Python 3.11+** - используй современные возможности языка
+- Форматирование: **black** (line-length = 100)
+- Линтер: **ruff** с расширенными правилами
+- Type checker: **mypy** в strict mode
 - Явное лучше неявного - понятный и читаемый код
-- Type hints для параметров и возвращаемых значений
-- Docstrings для классов и публичных методов
+
+### Type Hints (обязательно)
+```python
+# ✅ Правильно
+def process_message(user_id: int, text: str) -> str:
+    ...
+
+# ✅ Правильно - с Protocol
+from typing import Protocol
+
+class IStorage(Protocol):
+    def get(self, key: int) -> User | None: ...
+
+# ❌ Неправильно - без аннотаций
+def process_message(user_id, text):
+    ...
+```
+
+### Docstrings (обязательно для публичных API)
+```python
+# ✅ Правильно
+def send_message(self, messages: list[dict]) -> str:
+    """Отправка сообщения в LLM
+    
+    Args:
+        messages: История сообщений в формате OpenAI
+        
+    Returns:
+        str: Ответ от LLM
+        
+    Raises:
+        Exception: При ошибках API
+    """
+    ...
+
+# Для приватных методов docstring опционален, если код очевиден
+```
 
 ### Именование
-- Классы: `PascalCase`
-- Функции/методы: `snake_case`
-- Константы: `UPPER_CASE`
-- Приватные атрибуты: `_leading_underscore`
+- Классы: `PascalCase` (User, BotDependencies, RateLimitMiddleware)
+- Функции/методы: `snake_case` (get_user, send_message)
+- Константы: `UPPER_CASE` (MAX_MESSAGE_LENGTH, RETRY_DELAY)
+- Приватные атрибуты: `_leading_underscore` (_conversations, _cleanup_old)
+- Protocol интерфейсы: `I` prefix (IUserStorage, ILLMClient)
 
-### Архитектура
-- Следуй структуре проекта из [vision.md](./vision.md)
-- Не создавай новые слои абстракции
-- Логика разделяется по классам согласно схеме компонентов
+---
 
-### Хранение данных
-- In-memory: словари и списки в классах
-- `UserStorage`: `{chat_id: User}`
-- `ConversationStorage`: `{chat_id: Conversation}`
+## Форматирование кода
+
+### Black (автоформатирование)
+```bash
+make format  # Форматирует весь код
+```
+
+**Настройки:**
+- Line length: 100 символов
+- Target version: Python 3.11
+- Автоматические двойные кавычки
+
+### Ruff (линтер)
+```bash
+make lint  # Проверка кода
+```
+
+**Проверяемые правила:**
+- Ошибки синтаксиса и логики (pyflakes)
+- Стиль кода (pycodestyle)
+- Сложность кода (mccabe)
+- Import сортировка (isort)
+- Неиспользуемые аргументы и переменные
+- Безопасность (bandit subset)
+- Лучшие практики (bugbear, comprehensions)
+
+**Что запрещено:**
+- ❌ `import *` - только явные импорты
+- ❌ Голые `except:` - всегда указывай тип исключения
+- ❌ Mutable default arguments
+- ❌ Неиспользуемые импорты и переменные
+- ❌ TODO/FIXME в production коде
+
+### Mypy (проверка типов)
+```bash
+make type-check  # Проверка типов
+```
+
+**Требования:**
+- Strict mode включен
+- Все функции аннотированы
+- Все атрибуты классов аннотированы
+- Никаких `Any` без явной необходимости
+
+---
+
+## Обработка ошибок и безопасность
+
+### Exceptions (критично для безопасности)
+```python
+# ✅ Правильно - безопасная обработка
+try:
+    response = await api_call()
+except APIError as e:
+    logger.error(f"API error occurred", exc_info=True)
+    raise Exception("Service temporarily unavailable") from e
+
+# ❌ Неправильно - утечка информации
+try:
+    response = await api_call()
+except APIError as e:
+    raise Exception(f"API error: {e}")  # Может содержать API ключи!
+```
+
+### Валидация входных данных
+```python
+# ✅ Правильно
+MAX_MESSAGE_LENGTH = 4000
+
+if len(message.text) > MAX_MESSAGE_LENGTH:
+    await message.answer("❌ Сообщение слишком длинное")
+    return
+
+if not message.text.strip():
+    await message.answer("❌ Пустое сообщение")
+    return
+
+# ❌ Неправильно - нет валидации
+conversation.add_message("user", message.text)
+```
+
+### Логирование ошибок
+```python
+# ✅ Правильно
+logger.error("Failed to process message", exc_info=True, extra={
+    "user_id": user_id,
+    "message_length": len(text)
+})
+
+# ❌ Неправильно - может логировать чувствительные данные
+logger.error(f"Error: {api_response}")
+```
+
+---
+
+## Архитектура и зависимости
+
+### Dependency Injection (избегай глобальных переменных)
+```python
+# ✅ Правильно - DI через middleware
+class BotDependencies:
+    def __init__(self, storage: IUserStorage, client: ILLMClient):
+        self.storage = storage
+        self.client = client
+
+# В main.py
+bot.workflow_data["deps"] = BotDependencies(...)
+
+# В handlers
+async def handler(message: Message, deps: BotDependencies):
+    user = deps.storage.get(message.chat.id)
+
+# ❌ Неправильно - глобальные переменные
+user_storage: UserStorage  # Плохо!
+llm_client: LLMClient      # Плохо!
+```
+
+### Protocol вместо ABC (для интерфейсов)
+```python
+# ✅ Правильно - Protocol (structural typing)
+from typing import Protocol
+
+class IUserStorage(Protocol):
+    def get(self, chat_id: int) -> User | None: ...
+    def save(self, user: User) -> None: ...
+
+# ❌ Неправильно - ABC (излишне сложно для KISS)
+from abc import ABC, abstractmethod
+
+class UserStorageBase(ABC):  # Оверинжиниринг!
+    @abstractmethod
+    def get(self, chat_id: int) -> User | None: ...
+```
+
+### Управление ресурсами
+```python
+# ✅ Правильно - LRU cache для storage
+from collections import OrderedDict
+
+class ConversationStorage:
+    def __init__(self, max_size: int = 1000):
+        self._conversations: OrderedDict = OrderedDict()
+        self._max_size = max_size
+    
+    def get_or_create(self, chat_id: int) -> Conversation:
+        # Удаляем старые при превышении
+        if len(self._conversations) >= self._max_size:
+            self._conversations.popitem(last=False)
+        ...
+
+# ❌ Неправильно - бесконечный рост
+class ConversationStorage:
+    def __init__(self):
+        self._conversations: dict = {}  # Утечка памяти!
+```
+
+---
+
+## Стандарты тестирования
+
+### Структура тестов
+```python
+# ✅ Правильно
+def test_user_creation():
+    """Тест создания пользователя"""
+    user = User(chat_id=123, username="test", ...)
+    assert user.chat_id == 123
+    assert user.username == "test"
+
+# Имена файлов: test_*.py
+# Имена классов: Test*
+# Имена функций: test_*
+```
+
+### Покрытие тестами
+```bash
+make test-cov  # Запуск с отчетом о покрытии
+```
+
+**Требования:**
+- Минимум 80% покрытие кода
+- Unit тесты для всех классов
+- Интеграционные тесты для критичных flow
+- Тесты для edge cases
+
+### Pytest fixtures
+```python
+# ✅ Правильно - переиспользуемые fixtures
+@pytest.fixture
+def mock_llm_client():
+    with patch('llm.client.LLMClient') as mock:
+        mock.return_value.send_message.return_value = "Test response"
+        yield mock
+
+def test_message_handler(mock_llm_client):
+    # Используем фикстуру
+    ...
+```
+
+### Async тесты
+```python
+# ✅ Правильно - pytest-asyncio
+import pytest
+
+@pytest.mark.asyncio
+async def test_async_handler():
+    result = await some_async_function()
+    assert result == expected
+```
+
+---
+
+## Лучшие практики Python
+
+### Используй современный Python 3.11+
+```python
+# ✅ Правильно - union types (3.10+)
+def get_user(chat_id: int) -> User | None:
+    ...
+
+# ✅ Правильно - match statement (3.10+)
+match status:
+    case "active":
+        ...
+    case "inactive":
+        ...
+
+# ❌ Устаревший стиль
+from typing import Optional, Union
+def get_user(chat_id: int) -> Optional[User]:
+    ...
+```
+
+### Используй dataclasses
+```python
+# ✅ Правильно
+from dataclasses import dataclass
+
+@dataclass
+class User:
+    chat_id: int
+    username: str | None
+    first_name: str
+
+# ❌ Неправильно - излишне многословно
+class User:
+    def __init__(self, chat_id: int, username: str | None, ...):
+        self.chat_id = chat_id
+        self.username = username
+        ...
+```
+
+### List comprehensions (но без фанатизма)
+```python
+# ✅ Правильно - читаемо
+active_users = [u for u in users if u.is_active]
+
+# ✅ Правильно - сложная логика в отдельной функции
+def is_valid_user(user: User) -> bool:
+    return user.is_active and user.verified and len(user.messages) > 0
+
+valid_users = [u for u in users if is_valid_user(u)]
+
+# ❌ Неправильно - нечитаемо
+users = [u for u in all_users if u.active and u.verified and len(u.msg) > 0 and ...]
+```
+
+### Константы в начале модуля или класса
+```python
+# ✅ Правильно
+MAX_MESSAGE_LENGTH = 4000
+RATE_LIMIT_SECONDS = 2
+MAX_RETRIES = 3
+
+class Handler:
+    def process(self, msg: str) -> None:
+        if len(msg) > MAX_MESSAGE_LENGTH:
+            ...
+```
+
+---
+
+## Хранение данных
+
+### In-memory storage с LRU
+- Используй `OrderedDict` для LRU cache
+- Добавь TTL (time-to-live) для автоочистки
+- Ограничивай размер storage (max_size)
+
+```python
+# ✅ Правильно
+from collections import OrderedDict
+from datetime import datetime, timedelta
+
+class Storage:
+    def __init__(self, max_size: int = 1000, ttl_hours: int = 24):
+        self._data: OrderedDict[int, tuple[T, datetime]] = OrderedDict()
+        self._max_size = max_size
+        self._ttl = timedelta(hours=ttl_hours)
+```
+
+### Конфигурация storage
+```bash
+# .env
+MAX_STORAGE_SIZE=1000
+STORAGE_TTL_HOURS=24
+```
+
+---
+
+## Middleware (aiogram)
+
+### Структура middleware
+```python
+# ✅ Правильно - src/middlewares/rate_limit.py
+from aiogram import BaseMiddleware
+from typing import Callable, Dict, Any
+
+class RateLimitMiddleware(BaseMiddleware):
+    def __init__(self, rate_limit: int = 2):
+        self.rate_limit = rate_limit
+        self.last_request: Dict[int, float] = {}
+    
+    async def __call__(
+        self,
+        handler: Callable,
+        event: Message,
+        data: Dict[str, Any]
+    ) -> Any:
+        # Логика rate limiting
+        ...
+        return await handler(event, data)
+```
+
+### Подключение middleware
+```python
+# В main.py
+from src.middlewares.rate_limit import RateLimitMiddleware
+
+dp.message.middleware(RateLimitMiddleware(rate_limit=2))
+```
+
+---
 
 ## Что НЕ делать
 
-- ❌ Не создавай базовые классы и абстракции без явной необходимости
-- ❌ Не используй сложные паттерны проектирования
+### Архитектура
+- ❌ Не создавай базовые классы (ABC) без явной необходимости
+- ❌ Не используй сложные паттерны проектирования (Factory, Builder и т.д.)
 - ❌ Не дублируй код из vision.md - ссылайся на него
 - ❌ Не добавляй функции "на будущее"
-- ❌ Не используй внешние БД, ORM, DI-контейнеры
+- ❌ Не используй внешние БД, ORM, DI-контейнеры (для данного проекта)
+- ❌ Не используй глобальные переменные для хранения зависимостей
+
+### Безопасность
+- ❌ Не показывай внутренние ошибки пользователю
+- ❌ Не логируй чувствительные данные (API ключи, токены)
+- ❌ Не передавай детали exceptions наружу
+- ❌ Не пропускай валидацию входных данных
+
+### Код
+- ❌ Не используй `import *`
+- ❌ Не используй голые `except:`
+- ❌ Не оставляй TODO/FIXME в коде
+- ❌ Не пропускай type hints
+- ❌ Не создавай функции без docstrings (для публичного API)
+
+---
 
 ## Процесс разработки
 
 1. **Сначала работающий MVP** - потом улучшения
 2. **Итеративно** - маленькими шагами
-3. **Тестируй** - базовые тесты с pytest
+3. **Тестируй** - базовые тесты с pytest, покрытие ≥80%
 4. **Логируй** - важные события в текстовый файл
+5. **Проверяй качество** - запускай `make check` перед коммитом
+
+### Команды для проверки качества
+```bash
+make format      # Форматирование black
+make lint        # Проверка ruff
+make type-check  # Проверка mypy
+make test        # Запуск тестов
+make test-cov    # Тесты с покрытием
+make check       # Все проверки сразу
+```
+
+---
 
 ## Референс
 
-Полная информация о технологиях, архитектуре и моделях данных находится в [vision.md](./vision.md).
+- Полная информация о технологиях: [vision.md](../../docs/vision.md)
+- Архитектура и модели данных: [vision.md](../../docs/vision.md)
+- Процесс разработки: [workflow.mdc](./workflow.mdc)
+- План технического долга: [tasklist_tech_debt.md](../../docs/tasklist_tech_debt.md)
