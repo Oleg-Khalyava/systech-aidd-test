@@ -179,7 +179,6 @@ class User:
     chat_id: int             # ID чата в Telegram
     username: str            # Username
     first_name: str          # Имя
-    current_role: str        # Текущая роль (системный промпт)
 ```
 
 ### Conversation (класс диалога)

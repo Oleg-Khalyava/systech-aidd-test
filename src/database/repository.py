@@ -127,7 +127,7 @@ class UserRepository:
         self.db = db_manager
 
     async def get_or_create(
-        self, chat_id: int, username: str | None, first_name: str, current_role: str
+        self, chat_id: int, username: str | None, first_name: str
     ) -> dict[str, Any]:
         """Get existing user or create new one
 
@@ -138,7 +138,6 @@ class UserRepository:
             chat_id: Telegram chat ID
             username: Telegram username (can be None)
             first_name: User's first name
-            current_role: Current system prompt/role for the user
 
         Returns:
             Dict with user data
@@ -146,10 +145,10 @@ class UserRepository:
         # Try to insert (will be ignored if exists)
         await self.db.execute(
             """
-            INSERT OR IGNORE INTO users (id, username, first_name, current_role, created_at, last_accessed)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            INSERT OR IGNORE INTO users (id, username, first_name, created_at, last_accessed)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             """,
-            (chat_id, username, first_name, current_role),
+            (chat_id, username, first_name),
         )
 
         # Update last_accessed for existing user
@@ -198,22 +197,6 @@ class UserRepository:
             WHERE id = ? AND deleted_at IS NULL
             """,
             (chat_id,),
-        )
-
-    async def update_role(self, chat_id: int, role: str) -> None:
-        """Update user's current role/prompt
-
-        Args:
-            chat_id: Telegram chat ID
-            role: New role/prompt text
-        """
-        await self.db.execute(
-            """
-            UPDATE users
-            SET current_role = ?
-            WHERE id = ? AND deleted_at IS NULL
-            """,
-            (role, chat_id),
         )
 
     async def soft_delete(self, chat_id: int) -> None:
@@ -340,4 +323,3 @@ class MessageRepository:
             """,
             (query,),
         )
-

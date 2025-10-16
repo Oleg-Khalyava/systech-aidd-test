@@ -306,7 +306,7 @@ uv run alembic current
 **Схема базы данных:**
 
 - `users` - пользователи бота (с soft delete)
-  - id, username, first_name, current_role
+  - id, username, first_name
   - created_at, last_accessed, deleted_at
 
 - `messages` - история сообщений (с soft delete)

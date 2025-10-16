@@ -37,7 +37,6 @@ async def cmd_start(message: Message, deps: BotDependencies) -> None:
         chat_id=message.chat.id,
         username=message.from_user.username,
         first_name=message.from_user.first_name,
-        current_role=deps.config.default_system_prompt,
     )
 
     # Отправляем приветствие из конфига с именем пользователя
@@ -146,7 +145,6 @@ async def message_handler(message: Message, deps: BotDependencies) -> None:
         chat_id=message.chat.id,
         username=message.from_user.username,
         first_name=message.from_user.first_name,
-        current_role=deps.config.default_system_prompt,
     )
 
     # Сохраняем сообщение пользователя в БД

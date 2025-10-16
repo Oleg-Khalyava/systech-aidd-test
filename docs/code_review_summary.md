@@ -154,7 +154,6 @@ class User:
     chat_id: int
     username: str | None
     first_name: str
-    current_role: str
 ```
 
 **Результаты проверок:**

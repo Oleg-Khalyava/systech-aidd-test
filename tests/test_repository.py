@@ -13,19 +13,21 @@ async def db_manager():
     await manager.init()
 
     # Применяем миграцию вручную для тестовой БД
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE TABLE users (
             id INTEGER PRIMARY KEY,
             username TEXT NULL,
             first_name TEXT NOT NULL,
-            current_role TEXT NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             last_accessed TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             deleted_at TIMESTAMP NULL
         )
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE TABLE messages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
@@ -36,38 +38,49 @@ async def db_manager():
             deleted_at TIMESTAMP NULL,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE INDEX idx_messages_user_created
         ON messages(user_id, created_at)
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE VIRTUAL TABLE messages_fts
         USING fts5(content, content='messages', content_rowid='id')
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE TRIGGER messages_fts_insert AFTER INSERT ON messages BEGIN
             INSERT INTO messages_fts(rowid, content)
             VALUES (new.id, new.content);
         END
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE TRIGGER messages_fts_update AFTER UPDATE ON messages BEGIN
             UPDATE messages_fts
             SET content = new.content
             WHERE rowid = new.id;
         END
-    """)
+    """
+    )
 
-    await manager.execute("""
+    await manager.execute(
+        """
         CREATE TRIGGER messages_fts_delete AFTER DELETE ON messages BEGIN
             DELETE FROM messages_fts WHERE rowid = old.id;
         END
-    """)
+    """
+    )
 
     yield manager
 
@@ -103,8 +116,8 @@ class TestDatabaseManager:
     async def test_execute(self, db_manager):
         """Тест выполнения SQL запроса"""
         cursor = await db_manager.execute(
-            "INSERT INTO users (id, username, first_name, current_role) VALUES (?, ?, ?, ?)",
-            (1, "test_user", "Test", "default")
+            "INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)",
+            (1, "test_user", "Test"),
         )
         assert cursor.lastrowid == 1
 
@@ -112,8 +125,8 @@ class TestDatabaseManager:
     async def test_fetchone(self, db_manager):
         """Тест получения одной строки"""
         await db_manager.execute(
-            "INSERT INTO users (id, username, first_name, current_role) VALUES (?, ?, ?, ?)",
-            (1, "test_user", "Test", "default")
+            "INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)",
+            (1, "test_user", "Test"),
         )
 
         user = await db_manager.fetchone("SELECT * FROM users WHERE id = ?", (1,))
@@ -125,12 +138,12 @@ class TestDatabaseManager:
     async def test_fetchall(self, db_manager):
         """Тест получения всех строк"""
         await db_manager.execute(
-            "INSERT INTO users (id, username, first_name, current_role) VALUES (?, ?, ?, ?)",
-            (1, "user1", "User One", "default")
+            "INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)",
+            (1, "user1", "User One"),
         )
         await db_manager.execute(
-            "INSERT INTO users (id, username, first_name, current_role) VALUES (?, ?, ?, ?)",
-            (2, "user2", "User Two", "default")
+            "INSERT INTO users (id, username, first_name) VALUES (?, ?, ?)",
+            (2, "user2", "User Two"),
         )
 
         users = await db_manager.fetchall("SELECT * FROM users ORDER BY id")
@@ -146,16 +159,12 @@ class TestUserRepository:
     async def test_get_or_create_new_user(self, user_repo):
         """Тест создания нового пользователя"""
         user = await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="nutritionist"
+            chat_id=123, username="test_user", first_name="Test User"
         )
 
         assert user["id"] == 123
         assert user["username"] == "test_user"
         assert user["first_name"] == "Test User"
-        assert user["current_role"] == "nutritionist"
         assert user["deleted_at"] is None
 
     @pytest.mark.asyncio
@@ -163,18 +172,12 @@ class TestUserRepository:
         """Тест получения существующего пользователя"""
         # Создаем пользователя
         user1 = await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="nutritionist"
+            chat_id=123, username="test_user", first_name="Test User"
         )
 
         # Получаем того же пользователя
         user2 = await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="nutritionist"
+            chat_id=123, username="test_user", first_name="Test User"
         )
 
         assert user1["id"] == user2["id"]
@@ -183,12 +186,7 @@ class TestUserRepository:
     @pytest.mark.asyncio
     async def test_get_by_id(self, user_repo):
         """Тест получения пользователя по ID"""
-        await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="nutritionist"
-        )
+        await user_repo.get_or_create(chat_id=123, username="test_user", first_name="Test User")
 
         user = await user_repo.get_by_id(123)
         assert user is not None
@@ -201,29 +199,9 @@ class TestUserRepository:
         assert user is None
 
     @pytest.mark.asyncio
-    async def test_update_role(self, user_repo):
-        """Тест обновления роли пользователя"""
-        await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="default"
-        )
-
-        await user_repo.update_role(123, "nutritionist")
-
-        user = await user_repo.get_by_id(123)
-        assert user["current_role"] == "nutritionist"
-
-    @pytest.mark.asyncio
     async def test_soft_delete(self, user_repo):
         """Тест soft delete пользователя"""
-        await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="default"
-        )
+        await user_repo.get_or_create(chat_id=123, username="test_user", first_name="Test User")
 
         await user_repo.soft_delete(123)
 
@@ -238,21 +216,12 @@ class TestMessageRepository:
     @pytest_asyncio.fixture(autouse=True)
     async def setup_user(self, user_repo):
         """Создаем тестового пользователя перед каждым тестом"""
-        await user_repo.get_or_create(
-            chat_id=123,
-            username="test_user",
-            first_name="Test User",
-            current_role="default"
-        )
+        await user_repo.get_or_create(chat_id=123, username="test_user", first_name="Test User")
 
     @pytest.mark.asyncio
     async def test_create_message(self, message_repo):
         """Тест создания сообщения"""
-        message_id = await message_repo.create(
-            user_id=123,
-            role="user",
-            content="Hello, bot!"
-        )
+        message_id = await message_repo.create(user_id=123, role="user", content="Hello, bot!")
 
         assert message_id > 0
 
@@ -260,17 +229,10 @@ class TestMessageRepository:
     async def test_create_message_calculates_length(self, message_repo, db_manager):
         """Тест автоматического вычисления длины сообщения"""
         content = "Test message content"
-        message_id = await message_repo.create(
-            user_id=123,
-            role="user",
-            content=content
-        )
+        message_id = await message_repo.create(user_id=123, role="user", content=content)
 
         # Проверяем, что length вычислен правильно
-        message = await db_manager.fetchone(
-            "SELECT * FROM messages WHERE id = ?",
-            (message_id,)
-        )
+        message = await db_manager.fetchone("SELECT * FROM messages WHERE id = ?", (message_id,))
         assert message["length"] == len(content)
 
     @pytest.mark.asyncio
@@ -298,10 +260,7 @@ class TestMessageRepository:
         await message_repo.soft_delete(message_id)
 
         # Проверяем, что deleted_at установлен
-        message = await db_manager.fetchone(
-            "SELECT * FROM messages WHERE id = ?",
-            (message_id,)
-        )
+        message = await db_manager.fetchone("SELECT * FROM messages WHERE id = ?", (message_id,))
         assert message["deleted_at"] is not None
 
         # Сообщение не должно возвращаться в get_recent
@@ -333,4 +292,3 @@ class TestMessageRepository:
 
         assert len(results) == 2
         assert any("pizza" in msg["content"].lower() for msg in results)
-
