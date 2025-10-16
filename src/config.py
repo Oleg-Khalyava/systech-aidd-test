@@ -19,8 +19,7 @@ class Config:
         system_prompt_file: Путь к файлу с системным промптом
         max_context_messages: Максимальное количество сообщений в контексте
         welcome_message: Текст приветственного сообщения
-        max_storage_size: Максимальное количество записей в storage (LRU)
-        storage_ttl_hours: Время жизни записей в storage (в часах)
+        database_path: Путь к файлу базы данных SQLite
     """
 
     telegram_bot_token: str
@@ -31,8 +30,7 @@ class Config:
     system_prompt_file: str
     max_context_messages: int
     welcome_message: str
-    max_storage_size: int
-    storage_ttl_hours: int
+    database_path: str
 
     @classmethod
     def load(cls) -> "Config":
@@ -85,30 +83,8 @@ class Config:
         # Путь к файлу системного промпта
         prompt_file = os.getenv("SYSTEM_PROMPT_FILE", "prompts/nutritionist.txt")
 
-        # Параметры для управления памятью
-        max_storage_str = os.getenv("MAX_STORAGE_SIZE", "1000")
-        try:
-            max_storage = int(max_storage_str)
-            if max_storage <= 0:
-                raise ValueError("MAX_STORAGE_SIZE must be greater than 0")
-        except ValueError as e:
-            if "invalid literal" in str(e):
-                raise ValueError(
-                    f"MAX_STORAGE_SIZE must be a valid integer, got: {max_storage_str}"
-                )
-            raise
-
-        storage_ttl_str = os.getenv("STORAGE_TTL_HOURS", "24")
-        try:
-            storage_ttl = int(storage_ttl_str)
-            if storage_ttl <= 0:
-                raise ValueError("STORAGE_TTL_HOURS must be greater than 0")
-        except ValueError as e:
-            if "invalid literal" in str(e):
-                raise ValueError(
-                    f"STORAGE_TTL_HOURS must be a valid integer, got: {storage_ttl_str}"
-                )
-            raise
+        # Путь к базе данных
+        database_path = os.getenv("DATABASE_PATH", "data/bot.db")
 
         return cls(
             telegram_bot_token=token.strip(),
@@ -119,6 +95,5 @@ class Config:
             system_prompt_file=prompt_file,
             max_context_messages=max_messages,
             welcome_message=welcome_msg,
-            max_storage_size=max_storage,
-            storage_ttl_hours=storage_ttl,
+            database_path=database_path,
         )

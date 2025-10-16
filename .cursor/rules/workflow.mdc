@@ -60,3 +60,13 @@ alwaysApply: false
 - Никаких избыточных абстракций
 - Базовые функции сначала, расширения - потом
 
+---
+
+## Референс
+
+- Roadmap проекта: [roadmap.md](../../docs/roadmap.md)
+- Архитектура: [vision.md](../../docs/vision.md)
+- Соглашения по коду: [conventions.mdc](./conventions.mdc)
+- QA соглашения: [qa_conventions.mdc](./qa_conventions.mdc)
+- TDD workflow: [workflow_tdd.mdc](./workflow_tdd.mdc)
+

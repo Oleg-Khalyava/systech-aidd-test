@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # Соглашения по разработке
 
@@ -481,4 +481,5 @@ make check       # Все проверки сразу
 - Полная информация о технологиях: [vision.md](../../docs/vision.md)
 - Архитектура и модели данных: [vision.md](../../docs/vision.md)
 - Процесс разработки: [workflow.mdc](./workflow.mdc)
-- План технического долга: [tasklist_tech_debt.md](../../docs/tasklist_tech_debt.md)
+- План технического долга Sprint 0: [tasklist_tech_debt-sp0.md](../../docs/tasklists/tasklist_tech_debt-sp0.md)
+- Roadmap проекта: [roadmap.md](../../docs/roadmap.md)

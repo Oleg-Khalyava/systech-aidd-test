@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # TDD Workflow
 
@@ -371,6 +371,7 @@ git commit -m "feat: iteration N - краткое описание + tests"
 
 ## Референс
 
+- Roadmap проекта: [roadmap.md](../../docs/roadmap.md)
 - QA соглашения: [qa_conventions.mdc](./qa_conventions.mdc)
 - Общие соглашения: [conventions.mdc](./conventions.mdc)
 - Базовый workflow: [workflow.mdc](./workflow.mdc)

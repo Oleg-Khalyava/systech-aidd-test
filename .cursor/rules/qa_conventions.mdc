@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
 # QA Automation Conventions
 
@@ -405,6 +405,7 @@ async def test_full_message_flow(mock_llm_client):
 
 ## Референс
 
+- Roadmap проекта: [roadmap.md](../../docs/roadmap.md)
 - Основные соглашения: [conventions.mdc](./conventions.mdc)
 - Процесс разработки: [workflow.mdc](./workflow.mdc)
 - Архитектура: [vision.md](../../docs/vision.md)

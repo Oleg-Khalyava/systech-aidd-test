@@ -7,6 +7,8 @@ dependencies = [
     "aiogram>=3.0.0",
     "openai>=1.0.0",
     "python-dotenv>=1.0.0",
+    "aiosqlite>=0.19.0",
+    "alembic>=1.12.0",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +76,14 @@ module = "openai.*"
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = "aiosqlite.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "alembic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
 check_untyped_defs = false
@@ -114,5 +124,16 @@ exclude_lines = [
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+    "mypy>=1.18.2",
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-cov>=7.0.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.14.0",
 ]
 

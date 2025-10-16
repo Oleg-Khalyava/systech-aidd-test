@@ -11,6 +11,8 @@
 
 ### Инфраструктура
 - **make** - автоматизация задач (запуск, форматирование)
+- **Docker** - контейнеризация приложения
+- **Docker Compose** - оркестрация контейнеров
 
 ### Разработка
 - **pytest** - тестирование (с pytest-asyncio, pytest-cov, pytest-mock)
@@ -19,7 +21,10 @@
 - **mypy** - статическая проверка типов (strict mode)
 
 ### Хранение данных
-- **In-memory** - хранение данных в классах Python (словари, списки)
+- **SQLite** - персистентная база данных с FTS5 для полнотекстового поиска
+- **aiosqlite** - async драйвер для SQLite
+- **Alembic** - управление миграциями базы данных
+- **Repository pattern** - слой доступа к данным без ORM
 
 ### Логирование
 - **Текстовый файл** - простое логирование в файл
@@ -46,45 +51,60 @@ systech-aidd-test/
 │   ├── main.py              # Точка входа, запуск бота
 │   ├── bot.py               # Класс бота (aiogram)
 │   ├── config.py            # Класс конфигурации
-│   ├── conversation.py      # Класс для управления диалогами (с LRU cache)
-│   ├── user.py              # Класс для управления пользователями (с LRU cache)
 │   ├── role_manager.py      # Управление ролью и системным промптом
 │   ├── dependencies.py      # Dependency Injection контейнер
-│   ├── protocols.py         # Protocol интерфейсы (IUserStorage, ILLMClient, IRoleManager)
+│   ├── protocols.py         # Protocol интерфейсы (ILLMClient, IRoleManager)
 │   ├── metrics.py           # Система метрик и мониторинга
 │   ├── logger.py            # Настройка логирования
+│   ├── validators.py        # Валидация входных данных
+│   ├── database/            # Слой доступа к данным
+│   │   ├── __init__.py
+│   │   └── repository.py    # DatabaseManager, UserRepository, MessageRepository
 │   ├── handlers/
 │   │   ├── __init__.py
 │   │   └── handlers.py      # Обработчики сообщений и команд
 │   └── middlewares/         # Middleware для aiogram
 │       ├── __init__.py
 │       ├── rate_limit.py    # Rate limiting middleware
-│       └── logging_middleware.py  # Логирование middleware
+│       └── dependency_injection.py  # Dependency injection middleware
 ├── llm/
 │   ├── __init__.py
 │   └── client.py            # Класс для работы с LLM
+├── alembic/                 # Миграции базы данных
+│   ├── versions/            # Файлы миграций
+│   ├── env.py               # Async конфигурация миграций
+│   └── script.py.mako       # Шаблон миграций
 ├── prompts/                 # Системные промпты для ролей
 │   └── nutritionist.txt     # Промпт роли Нутрициолога
+├── data/                    # База данных SQLite
+│   └── bot.db               # SQLite файл (создается автоматически)
 ├── tests/
 │   ├── __init__.py
 │   ├── test_config.py       # Тесты конфигурации
-│   ├── test_user.py         # Тесты пользователей
-│   ├── test_conversation.py # Тесты диалогов
 │   ├── test_role_manager.py # Тесты управления ролью
 │   ├── test_integration.py  # Интеграционные тесты
 │   ├── test_rate_limit.py   # Тесты rate limiting
 │   ├── test_dependencies.py # Тесты DI
-│   └── test_metrics.py      # Тесты метрик
+│   ├── test_metrics.py      # Тесты метрик
+│   ├── test_validators.py   # Тесты валидации
+│   └── test_repository.py   # Тесты репозиториев и БД
 ├── docs/                    # Документация
 │   ├── vision.md            # Техническое видение (этот файл)
 │   ├── idea.md              # Концепция продукта
-│   ├── tasklist.md          # Основной план разработки
-│   ├── tasklist_tech_debt.md # План устранения технического долга
+│   ├── roadmap.md           # Roadmap спринтов
+│   ├── tasklists/          # Тасклисты спринтов
+│   │   ├── tasklist-sp0.md          # Основной план разработки Sprint 0
+│   │   └── tasklist_tech_debt-sp0.md # План устранения технического долга Sprint 0
 │   └── code_review_summary.md # Результаты code review
 ├── logs/                    # Папка для логов
 ├── .env.example             # Пример переменных окружения
 ├── .env                     # Переменные окружения (не в git)
 ├── .gitignore
+├── alembic.ini              # Конфигурация Alembic
+├── Dockerfile               # Multi-stage Docker образ
+├── docker-compose.yml       # Docker Compose конфигурация
+├── entrypoint.sh            # Entrypoint для Docker
+├── .dockerignore            # Игнорируемые файлы для Docker
 ├── pyproject.toml           # Конфигурация uv + настройки инструментов
 ├── Makefile                 # Команды для запуска и проверки качества
 └── README.md
@@ -471,6 +491,7 @@ except Exception as e:
 - **QA соглашения:** [.cursor/rules/qa_conventions.mdc](../.cursor/rules/qa_conventions.mdc)
 - **Процесс разработки:** [.cursor/rules/workflow.mdc](../.cursor/rules/workflow.mdc)
 - **TDD процесс:** [.cursor/rules/workflow_tdd.mdc](../.cursor/rules/workflow_tdd.mdc)
-- **План разработки:** [tasklist.md](./tasklist.md)
-- **Технический долг:** [tasklist_tech_debt.md](./tasklist_tech_debt.md)
+- **Roadmap проекта:** [roadmap.md](./roadmap.md)
+- **План разработки Sprint 0:** [tasklist-sp0.md](./tasklists/tasklist-sp0.md)
+- **Технический долг Sprint 0:** [tasklist_tech_debt-sp0.md](./tasklists/tasklist_tech_debt-sp0.md)
 - **Code Review:** [code_review_summary.md](./code_review_summary.md)

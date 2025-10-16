@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 
 from src.config import Config
-from src.protocols import IConversationStorage, ILLMClient, IRoleManager, IUserStorage
+from src.database import MessageRepository, UserRepository
+from src.protocols import ILLMClient, IRoleManager
 
 
 @dataclass
@@ -14,15 +15,15 @@ class BotDependencies:
     через middleware и использования в handlers.
 
     Attributes:
-        user_storage: Хранилище пользователей
-        conversation_storage: Хранилище диалогов
+        user_repo: Repository для работы с пользователями
+        message_repo: Repository для работы с сообщениями
         llm_client: Клиент для работы с LLM
         role_manager: Менеджер ролей и системных промптов
         config: Конфигурация бота
     """
 
-    user_storage: IUserStorage
-    conversation_storage: IConversationStorage
+    user_repo: UserRepository
+    message_repo: MessageRepository
     llm_client: ILLMClient
     role_manager: IRoleManager
     config: Config

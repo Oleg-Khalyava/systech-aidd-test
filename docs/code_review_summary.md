@@ -464,8 +464,8 @@ except Exception as e:
 **4. Документация:**
 - ✅ README.md - полный и актуальный
 - ✅ docs/vision.md - техническая архитектура
-- ✅ docs/tasklist.md - план разработки
-- ✅ docs/tasklist_tech_debt.md - устранение техдолга
+- ✅ docs/tasklists/tasklist-sp0.md - план разработки Sprint 0
+- ✅ docs/tasklists/tasklist_tech_debt-sp0.md - устранение техдолга Sprint 0
 - ✅ Makefile - понятные команды
 
 #### ⚠️ Рекомендации

@@ -9,13 +9,12 @@ from aiogram.exceptions import TelegramNetworkError
 from llm.client import LLMClient
 from src.bot import TelegramBot
 from src.config import Config
-from src.conversation import ConversationStorage
+from src.database import DatabaseManager, MessageRepository, UserRepository
 from src.dependencies import BotDependencies
 from src.handlers.handlers import router
 from src.logger import setup_logger
 from src.middlewares import DependencyInjectionMiddleware, RateLimitMiddleware
 from src.role_manager import RoleManager
-from src.user import UserStorage
 
 # Настройка логгера
 logger = setup_logger()
@@ -66,15 +65,17 @@ async def main() -> None:
         print(f"Configuration error: {e}")
         sys.exit(1)
 
-    # Инициализация хранилищ с LRU cache и TTL
-    logger.info(
-        f"Initializing storages (max_size={config.max_storage_size}, "
-        f"ttl={config.storage_ttl_hours}h)..."
-    )
-    user_storage = UserStorage(max_size=config.max_storage_size, ttl_hours=config.storage_ttl_hours)
-    conversation_storage = ConversationStorage(
-        max_size=config.max_storage_size, ttl_hours=config.storage_ttl_hours
-    )
+    # Инициализация DatabaseManager
+    logger.info(f"Initializing database: {config.database_path}")
+    db_manager = DatabaseManager(config.database_path)
+    await db_manager.init()
+    logger.info("Database initialized successfully")
+
+    # Создание repositories
+    logger.info("Setting up data repositories...")
+    user_repo = UserRepository(db_manager)
+    message_repo = MessageRepository(db_manager)
+    logger.info("Repositories created successfully")
 
     # Инициализация LLM клиента
     logger.info(f"Initializing LLM client with model: {config.openrouter_model}")
@@ -97,8 +98,8 @@ async def main() -> None:
     # Создание контейнера зависимостей
     logger.info("Setting up dependency injection...")
     dependencies = BotDependencies(
-        user_storage=user_storage,
-        conversation_storage=conversation_storage,
+        user_repo=user_repo,
+        message_repo=message_repo,
         llm_client=llm_client,
         role_manager=role_manager,
         config=config,
@@ -157,6 +158,11 @@ async def main() -> None:
         logger.info("Shutting down bot...")
         await bot.stop()
         logger.info("Bot stopped successfully")
+
+        # Закрываем соединение с БД
+        logger.info("Closing database connection...")
+        await db_manager.close()
+        logger.info("Database connection closed")
 
 
 if __name__ == "__main__":

@@ -33,18 +33,15 @@ async def cmd_start(message: Message, deps: BotDependencies) -> None:
     )
 
     # Создаем или получаем пользователя
-    user = deps.user_storage.get_or_create(
+    user = await deps.user_repo.get_or_create(
         chat_id=message.chat.id,
         username=message.from_user.username,
         first_name=message.from_user.first_name,
-        default_role=deps.config.default_system_prompt,
+        current_role=deps.config.default_system_prompt,
     )
 
-    # Создаем или получаем диалог
-    deps.conversation_storage.get_or_create(message.chat.id)
-
     # Отправляем приветствие из конфига с именем пользователя
-    await message.answer(f"Привет, {user.first_name}! {deps.config.welcome_message}")
+    await message.answer(f"Привет, {user['first_name']}! {deps.config.welcome_message}")
 
 
 @router.message(Command("clear"))
@@ -59,11 +56,13 @@ async def cmd_clear(message: Message, deps: BotDependencies) -> None:
         f"Received /clear command from user {message.from_user.id if message.from_user else 'unknown'}"
     )
 
-    conversation = deps.conversation_storage.get(message.chat.id)
+    # Получаем текущие сообщения для подсчета
+    messages = await deps.message_repo.get_recent(message.chat.id, limit=10000)
+    messages_count = len(messages)
 
-    if conversation:
-        messages_count = len(conversation.messages)
-        conversation.clear()
+    if messages_count > 0:
+        # Soft delete всех сообщений пользователя
+        await deps.message_repo.soft_delete_all_for_user(message.chat.id)
         logger.info(
             f"Cleared conversation history for chat {message.chat.id} ({messages_count} messages)"
         )
@@ -143,30 +142,35 @@ async def message_handler(message: Message, deps: BotDependencies) -> None:
     )
 
     # Получаем или создаем пользователя (для трекинга)
-    deps.user_storage.get_or_create(
+    await deps.user_repo.get_or_create(
         chat_id=message.chat.id,
         username=message.from_user.username,
         first_name=message.from_user.first_name,
-        default_role=deps.config.default_system_prompt,
+        current_role=deps.config.default_system_prompt,
     )
-    # Получаем диалог
-    conversation = deps.conversation_storage.get_or_create(message.chat.id)
 
-    # Добавляем сообщение пользователя в историю
-    conversation.add_message("user", text)
+    # Сохраняем сообщение пользователя в БД
+    user_message_id = await deps.message_repo.create(
+        user_id=message.chat.id, role="user", content=text
+    )
 
     try:
-        # Формируем контекст для LLM с промптом из role_manager
-        context = conversation.get_context(
-            max_messages=deps.config.max_context_messages,
-            system_prompt=deps.role_manager.get_system_prompt(),
+        # Получаем последние сообщения из БД
+        recent_messages = await deps.message_repo.get_recent(
+            user_id=message.chat.id, limit=deps.config.max_context_messages
+        )
+
+        # Формируем контекст для LLM (сообщения в обратном порядке - от старых к новым)
+        context = [{"role": "system", "content": deps.role_manager.get_system_prompt()}]
+        context.extend(
+            [{"role": msg["role"], "content": msg["content"]} for msg in reversed(recent_messages)]
         )
 
         # Отправляем запрос к LLM
         response = await deps.llm_client.send_message(context)
 
-        # Добавляем ответ в историю
-        conversation.add_message("assistant", response)
+        # Сохраняем ответ ассистента в БД
+        await deps.message_repo.create(user_id=message.chat.id, role="assistant", content=response)
 
         logger.info(
             f"Successfully processed message for user {message.from_user.id}, "
@@ -184,6 +188,5 @@ async def message_handler(message: Message, deps: BotDependencies) -> None:
         await message.answer(
             "😔 Извините, произошла ошибка при обработке вашего запроса. Попробуйте еще раз."
         )
-        # Удаляем последнее сообщение пользователя из истории при ошибке
-        if conversation.messages and conversation.messages[-1]["role"] == "user":
-            conversation.messages.pop()
+        # Удаляем сообщение пользователя из БД при ошибке (soft delete)
+        await deps.message_repo.soft_delete(user_message_id)
