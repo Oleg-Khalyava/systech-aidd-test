@@ -33,6 +33,11 @@ class DatabaseManager:
         - WAL mode for better concurrency
         - Row factory for dict-like access
         """
+        # Skip if already initialized
+        if self._connection is not None:
+            logger.debug("Database already initialized, skipping")
+            return
+
         # Create data directory if not exists
         db_path = Path(self.db_path)
         db_path.parent.mkdir(parents=True, exist_ok=True)

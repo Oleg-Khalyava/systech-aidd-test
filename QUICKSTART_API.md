@@ -51,6 +51,37 @@ print(response.json())
 - `week` - статистика за неделю (7 дней) - **по умолчанию**
 - `month` - статистика за месяц (30 дней)
 
+### Отправить сообщение в AI чат (Normal mode)
+
+**cURL:**
+```bash
+curl -X POST http://localhost:8000/api/chat/message \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Привет! Как дела?", "mode": "normal"}'
+```
+
+**PowerShell:**
+```powershell
+$body = @{message='Привет! Как дела?';mode='normal'} | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:8000/api/chat/message" -Method POST -ContentType "application/json" -Body $body
+```
+
+### Аналитика БД (Admin mode)
+
+**PowerShell:**
+```powershell
+$body = @{message='Сколько всего пользователей?';mode='admin'} | ConvertTo-Json
+Invoke-RestMethod -Uri "http://localhost:8000/api/chat/message" -Method POST -ContentType "application/json" -Body $body
+```
+
+**Ответ:**
+```json
+{
+  "message": "Всего 1 пользователь",
+  "sql": "SELECT COUNT(*) as total FROM users WHERE deleted_at IS NULL LIMIT 100"
+}
+```
+
 ## Структура ответа
 
 ```json
@@ -79,9 +110,18 @@ make api-docs     # Открыть документацию
 
 ## Endpoints
 
+### Статистика
 - `GET /` - информация об API
 - `GET /stats?period=week` - статистика дашборда
 - `GET /health` - health check
+
+### AI Chat (NEW! 🤖)
+- `POST /api/chat/message` - отправить сообщение в AI чат
+  - Поддерживает 2 режима:
+    - `normal` - обычный чат с LLM ассистентом
+    - `admin` - аналитика БД с text-to-SQL генерацией
+
+### Документация
 - `GET /docs` - Swagger UI
 - `GET /redoc` - ReDoc документация
 
@@ -118,6 +158,30 @@ make install
 # Проверьте, свободен ли порт 8000
 netstat -an | findstr :8000
 ```
+
+### Chat endpoint возвращает 404
+
+**Проблема:** При отправке сообщения в чат получаете ошибку "Not Found"
+
+**Решение:**
+1. Убедитесь, что API сервер запущен через `make api-run` (использует `uv run`)
+2. Проверьте, что endpoint зарегистрирован:
+   ```powershell
+   (Invoke-RestMethod -Uri "http://localhost:8000/openapi.json").paths.PSObject.Properties.Name
+   ```
+   Должен быть в списке: `/api/chat/message`
+
+3. Если endpoint отсутствует:
+   ```bash
+   # Остановите все Python процессы
+   make api-stop
+
+   # Синхронизируйте зависимости
+   uv sync
+
+   # Перезапустите API
+   make api-run
+   ```
 
 ### Тесты не проходят
 

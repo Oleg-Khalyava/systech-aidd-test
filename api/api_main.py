@@ -12,9 +12,19 @@ from typing import Annotated
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.dependencies import get_stat_collector
-from api.models import PeriodEnum, StatsResponse
+from api.chat_manager import ChatManager
+from api.dependencies import get_chat_manager, get_stat_collector
+from api.models import (
+    ChatHistoryMessage,
+    ChatHistoryResponse,
+    ChatMode,
+    ChatRequest,
+    ChatResponse,
+    PeriodEnum,
+    StatsResponse,
+)
 from api.protocols import StatCollectorProtocol
+from src.database.repository import DatabaseManager
 
 # Create FastAPI application
 app = FastAPI(
@@ -104,6 +114,113 @@ async def health_check() -> dict[str, str]:
         Dict with status "ok"
     """
     return {"status": "ok"}
+
+
+@app.get("/api/chat/history/{user_id}", response_model=ChatHistoryResponse)
+async def get_chat_history(
+    user_id: int,
+    limit: Annotated[int, Query(description="Maximum number of messages to return")] = 50,
+    chat_manager: ChatManager = Depends(get_chat_manager),  # noqa: B008
+) -> ChatHistoryResponse:
+    """Get chat history for a user
+
+    Returns recent messages ordered by created_at (oldest first for display).
+
+    Args:
+        user_id: User ID
+        limit: Maximum number of messages to return (default: 50)
+        chat_manager: Chat manager (injected dependency)
+
+    Returns:
+        ChatHistoryResponse with list of messages
+
+    Example response:
+    ```json
+    {
+        "messages": [
+            {
+                "id": 1,
+                "role": "user",
+                "content": "Hello!",
+                "created_at": "2025-10-17T10:30:00"
+            },
+            {
+                "id": 2,
+                "role": "assistant",
+                "content": "Hi! How can I help?",
+                "created_at": "2025-10-17T10:30:05"
+            }
+        ]
+    }
+    ```
+    """
+    # Get recent messages from DB
+    messages_data = await chat_manager.message_repo.get_recent(user_id, limit)
+
+    # Convert to response model (reverse to show oldest first)
+    messages = [
+        ChatHistoryMessage(
+            id=msg["id"],
+            role=msg["role"],
+            content=msg["content"],
+            created_at=msg["created_at"],
+        )
+        for msg in reversed(messages_data)
+    ]
+
+    return ChatHistoryResponse(messages=messages)
+
+
+@app.post("/api/chat/message", response_model=ChatResponse)
+async def chat_message(
+    request: ChatRequest,
+    chat_manager: ChatManager = Depends(get_chat_manager),  # noqa: B008
+) -> ChatResponse:
+    """Send message to AI chat
+
+    Supports two modes:
+    - normal: Direct chat with LLM assistant
+    - admin: Analytics mode with text-to-SQL queries
+
+    Args:
+        request: Chat request with message and mode
+        chat_manager: Chat manager (injected dependency)
+
+    Returns:
+        ChatResponse with AI answer and optional SQL query
+
+    Example request (normal mode):
+    ```json
+    {
+        "message": "Hello, how are you?",
+        "mode": "normal"
+    }
+    ```
+
+    Example request (admin mode):
+    ```json
+    {
+        "message": "Сколько всего пользователей?",
+        "mode": "admin"
+    }
+    ```
+
+    Example response (admin mode):
+    ```json
+    {
+        "message": "В базе данных 1,234 активных пользователя",
+        "sql": "SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"
+    }
+    ```
+    """
+    if request.mode == ChatMode.NORMAL:
+        # Normal mode - direct LLM chat
+        answer = await chat_manager.handle_normal(request.user_id, request.message)
+        return ChatResponse(message=answer, sql=None)
+    else:
+        # Admin mode - text-to-SQL analytics
+        answer, sql = await chat_manager.handle_admin(request.user_id, request.message)
+        return ChatResponse(message=answer, sql=sql)
 
 
 if __name__ == "__main__":
