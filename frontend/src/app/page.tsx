@@ -1,96 +1,119 @@
 /**
  * Dashboard Page
- * Главная страница с placeholder для дашборда статистики
+ * Главная страница с дашбордом статистики Telegram бота
  */
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { healthCheck } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { getStats } from '@/lib/api';
+import type { StatsResponse, Period } from '@/types';
+import { PeriodSelector } from '@/components/dashboard/period-selector';
+import { KPICard } from '@/components/dashboard/kpi-card';
+import { TimelineChart } from '@/components/dashboard/timeline-chart';
 
 export default function DashboardPage() {
-  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [period, setPeriod] = useState<Period>('week');
+  const [stats, setStats] = useState<StatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // Функция загрузки данных
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getStats(period);
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to fetch stats:', err);
+      setError(
+        err instanceof Error ? err.message : 'Ошибка загрузки данных. Проверьте, что API запущен.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [period]);
+
+  // Загрузка данных при изменении периода
   useEffect(() => {
-    // Проверка подключения к API
-    healthCheck()
-      .then(() => setApiStatus('online'))
-      .catch(() => setApiStatus('offline'));
-  }, []);
+    fetchData();
+    // Автообновление каждые 30 секунд
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [fetchData]);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-gray-600">Статистика Telegram бота</p>
+      {/* Заголовок и переключатель периода */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Дашборд</h1>
+          <p className="text-muted-foreground">Статистика Telegram бота</p>
+        </div>
+        <PeriodSelector value={period} onChange={setPeriod} />
       </div>
 
-      {/* API Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Статус Backend API</CardTitle>
-          <CardDescription>Проверка подключения к http://localhost:8000</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2">
-            {apiStatus === 'checking' && <Badge variant="secondary">Проверка...</Badge>}
-            {apiStatus === 'online' && (
-              <>
-                <Badge className="bg-green-500">✓ Онлайн</Badge>
-                <span className="text-sm text-gray-600">API готов к работе</span>
-              </>
-            )}
-            {apiStatus === 'offline' && (
-              <>
-                <Badge variant="destructive">✗ Офлайн</Badge>
-                <span className="text-sm text-gray-600">
-                  Запустите API: <code className="bg-gray-100 px-2 py-1 rounded">make api-run</code>
-                </span>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Error state */}
+      {error && (
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Ошибка загрузки</CardTitle>
+            <CardDescription>{error}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Button onClick={fetchData} variant="outline" size="sm">
+                Повторить попытку
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Команда: <code className="bg-muted px-2 py-1 rounded">make api-run</code>
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Placeholder для Dashboard */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {['Total Users', 'Total Messages', 'Deleted Messages', 'Avg Message Length'].map(
-          (metric) => (
-            <Card key={metric}>
+      {/* Loading skeleton для KPI карт */}
+      {loading && !stats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
               <CardHeader className="pb-2">
-                <CardDescription>{metric}</CardDescription>
-                <CardTitle className="text-3xl">-</CardTitle>
+                <div className="h-4 bg-muted rounded animate-pulse w-2/3" />
+                <div className="h-8 bg-muted rounded animate-pulse w-1/2 mt-2" />
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-gray-600">SP-FE-3: Реализация dashboard</p>
+                <div className="h-4 bg-muted rounded animate-pulse w-1/3" />
               </CardContent>
             </Card>
-          )
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Info Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🚀 SP-FE-2 Завершен!</CardTitle>
-          <CardDescription>Frontend каркас проекта готов</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-sm">
-            <p>✅ Next.js 14+ с App Router</p>
-            <p>✅ TypeScript strict mode</p>
-            <p>✅ shadcn/ui компоненты установлены</p>
-            <p>✅ Tailwind CSS настроен</p>
-            <p>✅ API клиент с типами создан</p>
-            <p>✅ Layout компоненты готовы</p>
-            <p className="pt-2 font-medium">
-              Следующий спринт: SP-FE-3 - Реализация dashboard
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      {/* KPI Metrics Grid */}
+      {stats && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {stats.kpi_metrics.map((metric) => (
+            <KPICard key={metric.label} {...metric} />
+          ))}
+        </div>
+      )}
+
+      {/* Timeline Chart */}
+      <TimelineChart data={stats?.timeline || []} loading={loading && !stats} />
+
+      {/* Auto-refresh indicator */}
+      {stats && !loading && (
+        <div className="flex items-center justify-center">
+          <Badge variant="outline" className="text-xs">
+            ✓ Автообновление каждые 30 секунд
+          </Badge>
+        </div>
+      )}
     </div>
   );
 }

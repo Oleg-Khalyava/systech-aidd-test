@@ -1,4 +1,4 @@
-.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-build fe-lint fe-format fe-type-check fe-check
+.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-stop fe-build fe-lint fe-format fe-type-check fe-check
 
 install:
 	uv sync --all-extras
@@ -10,7 +10,7 @@ api-run:
 	uv run uvicorn api.api_main:app --reload --port 8000
 
 api-stop:
-	@powershell -Command "$$procs = Get-Process python -ErrorAction SilentlyContinue | Where-Object {$$_.CommandLine -like '*uvicorn*'}; if ($$procs) { $$procs | Stop-Process -Force; Write-Host 'API server stopped' } else { Write-Host 'No API server running' }; exit 0"
+	@powershell -Command "$$conn = Get-NetTCPConnection -LocalPort 8000 -State Listen -ErrorAction SilentlyContinue; if ($$conn) { $$procId = $$conn.OwningProcess; taskkill /F /T /PID $$procId 2>$$null | Out-Null; Write-Host \"API server (PID $$procId) stopped\" } else { Write-Host 'No API server running on port 8000' }; exit 0"
 
 api-test:
 	@echo "Testing API endpoints..."
@@ -52,6 +52,9 @@ fe-install:
 fe-dev:
 	cd frontend && pnpm dev
 
+fe-stop:
+	@powershell -Command "$$conn = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if ($$conn) { $$procId = $$conn.OwningProcess; taskkill /F /T /PID $$procId 2>$$null | Out-Null; Write-Host \"Frontend dev server (PID $$procId) stopped\" } else { Write-Host 'No frontend dev server running on port 3000' }; exit 0"
+
 fe-build:
 	cd frontend && pnpm build
 
@@ -88,6 +91,7 @@ help:
 	@echo "  make fe-install   - Install frontend dependencies (pnpm)"
 	@echo "  make fe-dev       - Run frontend dev server (port 3000)"
 	@echo "                      URL: http://localhost:3000"
+	@echo "  make fe-stop      - Stop the frontend dev server"
 	@echo "  make fe-build     - Build frontend for production"
 	@echo "  make fe-lint      - Run ESLint"
 	@echo "  make fe-format    - Format frontend code with Prettier"
