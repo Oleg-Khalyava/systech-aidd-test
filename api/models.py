@@ -67,3 +67,4 @@ class StatsResponse:
 
     kpi_metrics: list[KPIMetric]  # 4 KPI dashboard cards
     timeline: list[TimelinePoint]  # Timeline graph data
+

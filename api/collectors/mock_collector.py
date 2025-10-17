@@ -151,3 +151,4 @@ class MockStatCollector:
             kpi_metrics=kpi_metrics,
             timeline=timeline,
         )
+

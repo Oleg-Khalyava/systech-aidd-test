@@ -208,3 +208,4 @@ class TestMockStatCollector:
         assert collector._format_number(1234567) == "1,234,567"
         assert collector._format_number(999) == "999"
         assert collector._format_number(1000) == "1,000"
+

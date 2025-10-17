@@ -20,3 +20,4 @@ class RealStatCollector:
             StatsResponse with real data from database
         """
         raise NotImplementedError("Real collector not implemented yet. Use MockStatCollector.")
+

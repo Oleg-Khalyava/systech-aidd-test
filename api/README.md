@@ -213,3 +213,4 @@ async def get_stat_collector() -> StatCollectorProtocol:
     return RealStatCollector(db_manager)
 ```
 
+

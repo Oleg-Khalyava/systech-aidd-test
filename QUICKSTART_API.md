@@ -145,3 +145,4 @@ uv run pytest tests/test_api.py -v
 
 **Mock API готов к использованию! 🎉**
 
+

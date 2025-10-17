@@ -14,3 +14,4 @@ async def get_stat_collector() -> StatCollectorProtocol:
         StatCollectorProtocol implementation
     """
     return MockStatCollector()
+

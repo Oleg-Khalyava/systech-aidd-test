@@ -22,3 +22,4 @@ class StatCollectorProtocol(Protocol):
             StatsResponse with KPI metrics and timeline data
         """
         ...
+
