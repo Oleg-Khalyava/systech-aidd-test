@@ -8,6 +8,9 @@
 - **aiogram 3.x** - работа с Telegram Bot API (polling)
 - **openai** - клиент для работы с LLM через Openrouter
 - **python-dotenv** - загрузка переменных окружения
+- **FastAPI** - REST API для дашборда статистики
+- **uvicorn** - ASGI сервер для FastAPI
+- **pydantic** - валидация данных для API
 
 ### Инфраструктура
 - **make** - автоматизация задач (запуск, форматирование)
@@ -67,6 +70,17 @@ systech-aidd-test/
 │       ├── __init__.py
 │       ├── rate_limit.py    # Rate limiting middleware
 │       └── dependency_injection.py  # Dependency injection middleware
+├── api/                     # REST API для дашборда статистики
+│   ├── __init__.py
+│   ├── api_main.py          # FastAPI entrypoint
+│   ├── models.py            # Data models (KPIMetric, TimelinePoint, StatsResponse)
+│   ├── protocols.py         # StatCollectorProtocol interface
+│   ├── dependencies.py      # Dependency injection для FastAPI
+│   ├── collectors/          # Реализации сборщиков статистики
+│   │   ├── __init__.py
+│   │   ├── mock_collector.py   # Mock implementation (для разработки)
+│   │   └── real_collector.py   # Real implementation (для production)
+│   └── README.md            # Документация API
 ├── llm/
 │   ├── __init__.py
 │   └── client.py            # Класс для работы с LLM
@@ -80,6 +94,7 @@ systech-aidd-test/
 │   └── bot.db               # SQLite файл (создается автоматически)
 ├── tests/
 │   ├── __init__.py
+│   ├── test_api.py          # Тесты API endpoints и collectors
 │   ├── test_config.py       # Тесты конфигурации
 │   ├── test_role_manager.py # Тесты управления ролью
 │   ├── test_integration.py  # Интеграционные тесты
@@ -92,10 +107,15 @@ systech-aidd-test/
 │   ├── vision.md            # Техническое видение (этот файл)
 │   ├── idea.md              # Концепция продукта
 │   ├── roadmap.md           # Roadmap спринтов
+│   ├── sprint_s1_summary.md # Итоги Sprint S1 (Mock API)
 │   ├── tasklists/          # Тасклисты спринтов
 │   │   ├── tasklist-sp0.md          # Основной план разработки Sprint 0
 │   │   └── tasklist_tech_debt-sp0.md # План устранения технического долга Sprint 0
 │   └── code_review_summary.md # Результаты code review
+├── frontend/               # Frontend документация и ресурсы
+│   └── doc/
+│       ├── frontend-roadmap.md # Roadmap frontend разработки
+│       └── dashboard_image.jpg # Референс UI дашборда
 ├── logs/                    # Папка для логов
 ├── .env.example             # Пример переменных окружения
 ├── .env                     # Переменные окружения (не в git)
@@ -107,6 +127,7 @@ systech-aidd-test/
 ├── .dockerignore            # Игнорируемые файлы для Docker
 ├── pyproject.toml           # Конфигурация uv + настройки инструментов
 ├── Makefile                 # Команды для запуска и проверки качества
+├── QUICKSTART_API.md        # Быстрый старт для API
 └── README.md
 ```
 
@@ -152,7 +173,7 @@ systech-aidd-test/
 
 ### Описание компонентов
 
-#### Основные компоненты
+#### Telegram Bot компоненты
 - **Bot** - инициализация aiogram, polling, маршрутизация
 - **Handlers** - обработка команд (/start, /role, /clear, /help, /stats) и текстовых сообщений
 - **Conversation** - хранение истории диалога с LRU cache и TTL
@@ -161,7 +182,20 @@ systech-aidd-test/
 - **LLM Client** - отправка запросов к LLM, получение ответов
 - **Config** - загрузка и хранение конфигурации из .env
 
-#### Новые компоненты (улучшения)
+#### Database компоненты
+- **DatabaseManager** - управление SQLite connection (singleton, async)
+- **UserRepository** - CRUD операции для пользователей
+- **MessageRepository** - CRUD операции для сообщений, FTS5 поиск
+- **Alembic** - управление миграциями БД
+
+#### REST API компоненты (Sprint S1)
+- **FastAPI App** - REST API для дашборда статистики
+- **StatCollectorProtocol** - интерфейс для сборщиков статистики
+- **MockStatCollector** - Mock реализация с тестовыми данными (для разработки frontend)
+- **RealStatCollector** - Real реализация с данными из БД (для production)
+- **API Models** - dataclasses для API контрактов (KPIMetric, TimelinePoint, StatsResponse)
+
+#### Архитектурные компоненты
 - **BotDependencies** - Dependency Injection контейнер для зависимостей
 - **Protocols** - Protocol интерфейсы (IUserStorage, IConversationStorage, ILLMClient, IRoleManager)
 - **Middleware** - промежуточные обработчики для rate limiting и логирования
@@ -169,7 +203,7 @@ systech-aidd-test/
 
 #### Middleware компоненты
 - **RateLimitMiddleware** - защита от spam (rate limiting)
-- **LoggingMiddleware** - логирование всех запросов с временем обработки
+- **DependencyInjectionMiddleware** - внедрение зависимостей в handlers
 
 ## Модель данных
 
@@ -281,6 +315,17 @@ messages = [
 - **/clear** - очистка истории диалога
 - **/help** - справка по доступным командам
 - **/stats** - статистика бота (только для админа)
+
+### 4. REST API для статистики
+```
+1. Запуск API сервера: make api-run
+2. API доступен на http://localhost:8000
+3. Swagger UI на http://localhost:8000/docs
+4. Endpoint GET /stats?period=day|week|month
+5. Возвращает 4 KPI метрики + timeline данные
+6. Mock данные для разработки frontend
+7. Архитектура готова для замены на real data
+```
 
 ## Подход к конфигурированию
 
@@ -424,6 +469,12 @@ make test-cov
 
 # 5. Все проверки одной командой
 make check
+
+# API команды
+make api-run     # Запустить API сервер
+make api-stop    # Остановить API сервер
+make api-test    # Протестировать API
+make api-docs    # Открыть Swagger UI
 ```
 
 ### Метрики проекта
@@ -485,12 +536,26 @@ except Exception as e:
 
 ## Связанные документы
 
+### Основная документация
 - **Концепция продукта:** [idea.md](./idea.md)
+- **Roadmap проекта:** [roadmap.md](./roadmap.md)
+- **Frontend Roadmap:** [frontend/doc/frontend-roadmap.md](../frontend/doc/frontend-roadmap.md)
+
+### Процессы разработки
 - **Соглашения разработки:** [.cursor/rules/conventions.mdc](../.cursor/rules/conventions.mdc)
 - **QA соглашения:** [.cursor/rules/qa_conventions.mdc](../.cursor/rules/qa_conventions.mdc)
 - **Процесс разработки:** [.cursor/rules/workflow.mdc](../.cursor/rules/workflow.mdc)
 - **TDD процесс:** [.cursor/rules/workflow_tdd.mdc](../.cursor/rules/workflow_tdd.mdc)
-- **Roadmap проекта:** [roadmap.md](./roadmap.md)
-- **План разработки Sprint 0:** [tasklist-sp0.md](./tasklists/tasklist-sp0.md)
-- **Технический долг Sprint 0:** [tasklist_tech_debt-sp0.md](./tasklists/tasklist_tech_debt-sp0.md)
+
+### Спринты и планы
+- **Sprint 0 (Foundation):**
+  - [План разработки](./tasklists/tasklist-sp0.md)
+  - [Технический долг](./tasklists/tasklist_tech_debt-sp0.md)
+- **Sprint S1 (Mock API):**
+  - [План спринта](../.cursor/plans/s1-mock-api-dashboard-25be2357.plan.md)
+  - [Итоги спринта](./sprint_s1_summary.md)
+
+### Дополнительно
 - **Code Review:** [code_review_summary.md](./code_review_summary.md)
+- **API Quick Start:** [QUICKSTART_API.md](../QUICKSTART_API.md)
+- **API Documentation:** [api/README.md](../api/README.md)

@@ -53,3 +53,28 @@ data/*.db-wal
 # OS
 .DS_Store
 Thumbs.db
+
+# Frontend (Next.js)
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/.vercel/
+frontend/.turbo/
+
+# Frontend Dependencies
+frontend/node_modules/
+
+# Frontend Environment files
+frontend/.env*.local
+frontend/.env.production
+
+# Frontend Debug logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+
+# Frontend TypeScript
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
