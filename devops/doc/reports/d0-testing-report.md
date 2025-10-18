@@ -37,7 +37,7 @@
 При попытке выполнения команды `docker-compose build` получена ошибка:
 
 ```
-error during connect: Head "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/_ping": 
+error during connect: Head "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/_ping":
 open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
 ```
 

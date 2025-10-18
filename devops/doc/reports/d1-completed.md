@@ -357,3 +357,4 @@ ghcr.io/oleg-khalyava/systech-aidd-test-frontend
 **Автор:** DevOps Team  
 **Статус:** ✅ Архивный документ (sprint completed)
 
+

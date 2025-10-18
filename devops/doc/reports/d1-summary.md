@@ -121,3 +121,4 @@ IMAGE_TAG=sha-3df01f1 make docker-prod-up
 
 ✅ **Спринт завершен. Готово к D2!**
 
+

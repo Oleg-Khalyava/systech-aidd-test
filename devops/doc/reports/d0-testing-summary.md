@@ -34,7 +34,7 @@
 
 **Ошибка:**
 ```
-error during connect: open //./pipe/dockerDesktopLinuxEngine: 
+error during connect: open //./pipe/dockerDesktopLinuxEngine:
 The system cannot find the file specified.
 ```
 
@@ -137,7 +137,7 @@ docker-compose down
    - Запустить PowerShell от имени администратора
    - Выполнить: `Restart-Service hns`
    - Перезапустить Docker Desktop
-   
+
 2. **Если не помогло** - попробовать другие решения (см. полный отчет)
 
 3. **После запуска Docker** - выполнить тестирование
