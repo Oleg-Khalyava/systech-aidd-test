@@ -9,6 +9,9 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./prompts:/app/prompts
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -21,10 +24,13 @@ services:
     container_name: backend-api
     env_file: .env
     ports:
-      - "8000:8000"
+      - "8006:8000"
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+      - ./prompts:/app/prompts
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
     depends_on:
       - bot
     restart: unless-stopped
@@ -39,7 +45,7 @@ services:
     container_name: frontend-web
     env_file: .env
     ports:
-      - "3000:3000"
+      - "3006:3000"
     depends_on:
       - api
     restart: unless-stopped
