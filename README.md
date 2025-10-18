@@ -131,6 +131,83 @@ Docker автоматически:
 
 ---
 
+## 🚀 CI/CD и готовые Docker образы
+
+### Автоматическая сборка
+
+Проект использует **GitHub Actions** для автоматической сборки и публикации Docker образов при каждом изменении кода.
+
+**Статус сборки:** ![Build Status](https://github.com/Oleg-Khalyava/systech-aidd-test/actions/workflows/build.yml/badge.svg?branch=day-6-devops)
+
+### Использование готовых образов из GitHub Container Registry
+
+Вместо локальной сборки можно использовать готовые образы из GitHub Container Registry:
+
+```bash
+# Pull образов из registry
+docker pull ghcr.io/oleg-khalyava/systech-aidd-test-bot:latest
+docker pull ghcr.io/oleg-khalyava/systech-aidd-test-api:latest
+docker pull ghcr.io/oleg-khalyava/systech-aidd-test-frontend:latest
+
+# Или через Makefile (pull всех образов)
+make docker-prod-pull
+```
+
+### Быстрый запуск с готовыми образами
+
+```bash
+# 1. Настройте .env файл
+cp .env.example .env
+# Отредактируйте .env
+
+# 2. Pull образов
+make docker-prod-pull
+
+# 3. Запуск сервисов
+make docker-prod-up
+
+# 4. Проверка статуса
+docker ps
+
+# 5. Просмотр логов
+make docker-prod-logs
+```
+
+### Команды для работы с production образами
+
+| Команда | Описание |
+|---------|----------|
+| `make docker-prod-pull` | Скачать образы из registry |
+| `make docker-prod-up` | Запустить сервисы из registry |
+| `make docker-prod-down` | Остановить production сервисы |
+| `make docker-prod-restart` | Перезапустить production сервисы |
+| `make docker-prod-logs` | Показать логи production сервисов |
+
+### Использование конкретной версии
+
+```bash
+# Использовать образ с конкретным commit SHA
+IMAGE_TAG=sha-abc1234 make docker-prod-up
+
+# Или
+export IMAGE_TAG=sha-abc1234
+make docker-prod-up
+```
+
+### Переключение между режимами
+
+```bash
+# Local Build - сборка из исходников
+make docker-up
+
+# Production - готовые образы из registry
+make docker-prod-up
+```
+
+**Подробнее:** см. [devops/README.md](devops/README.md) и [DevOps Roadmap](devops/doc/devops-roadmap.md)
+
+---
+
 ## 🛠️ Технологический стек
 
 | Компонент | Технология | Назначение |
@@ -143,6 +220,8 @@ Docker автоматически:
 | **Migrations** | Alembic | Управление версиями схемы БД |
 | **Package Manager** | uv | Управление зависимостями |
 | **Container** | Docker + Docker Compose | Контейнеризация приложения |
+| **CI/CD** | GitHub Actions | Автоматическая сборка и публикация образов |
+| **Registry** | GitHub Container Registry (ghcr.io) | Хранение Docker образов |
 | **Testing** | pytest + pytest-asyncio + pytest-cov | Автоматическое тестирование |
 | **Linting** | ruff | Быстрый линтер (E, W, F, I, N, UP, B, C4, SIM) |
 | **Type Checking** | mypy | Статическая проверка типов (strict mode) |
