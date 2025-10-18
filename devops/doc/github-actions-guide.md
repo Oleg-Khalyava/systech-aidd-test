@@ -41,7 +41,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps: [...]
-  
+
   test:
     needs: build  # зависимость - запустится после build
     runs-on: ubuntu-latest
@@ -133,7 +133,7 @@ on:
 steps:
   - name: Build only
     run: docker build -t myapp .
-  
+
   - name: Push to registry
     if: github.event_name != 'pull_request'
     run: docker push myapp
@@ -229,20 +229,20 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       matrix:
         service: [bot, api, frontend]
-    
+
     steps:
       # 1. Checkout кода
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       # 2. Setup Docker Buildx (для advanced features)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       # 3. Login в GitHub Container Registry
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
@@ -251,7 +251,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       # 4. Генерация метаданных (tags, labels)
       - name: Extract metadata
         id: meta
@@ -262,7 +262,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
-      
+
       # 5. Build и Push
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -343,11 +343,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps: [...]
-  
+
   test:
     runs-on: ubuntu-latest
     steps: [...]
-  
+
   build:
     needs: [lint, test]  # запустится только после успеха
     runs-on: ubuntu-latest

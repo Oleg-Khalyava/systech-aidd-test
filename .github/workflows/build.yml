@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -32,16 +32,16 @@ jobs:
           - service: frontend
             context: ./frontend
             dockerfile: ../devops/frontend.Dockerfile
-    
+
     steps:
       # 1. Checkout кода
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       # 2. Setup Docker Buildx (для advanced features и caching)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       # 3. Login в GitHub Container Registry (только для push, не для PR)
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
@@ -50,7 +50,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       # 4. Генерация метаданных (tags, labels)
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -63,7 +63,7 @@ jobs:
           labels: |
             org.opencontainers.image.title=${{ github.repository }}-${{ matrix.service }}
             org.opencontainers.image.description=Docker image for ${{ matrix.service }} service
-      
+
       # 5. Build и Push Docker образа
       - name: Build and push Docker image (${{ matrix.service }})
         uses: docker/build-push-action@v5
@@ -78,7 +78,7 @@ jobs:
           build-args: |
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VERSION=${{ github.sha }}
-      
+
       # 6. Вывод информации о собранном образе
       - name: Image digest
         run: |

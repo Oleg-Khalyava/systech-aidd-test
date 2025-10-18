@@ -1,8 +1,8 @@
 # Спринт D1: Отчет о проверке результатов
 
-**Дата проверки:** 18.10.2025  
-**Проверяющий:** AI Assistant  
-**Ветка:** day-6-devops  
+**Дата проверки:** 18.10.2025
+**Проверяющий:** AI Assistant
+**Ветка:** day-6-devops
 **Commit:** 4a3f827
 
 ---
@@ -91,15 +91,15 @@ ghcr.io/oleg-khalyava/systech-aidd-test-frontend:sha-<commit>
 **Проблема:**
 При попытке push в GitHub возникла ошибка:
 ```
-! [remote rejected] day-6-devops -> day-6-devops (refusing to allow a 
-Personal Access Token to create or update workflow `.github/workflows/build.yml` 
+! [remote rejected] day-6-devops -> day-6-devops (refusing to allow a
+Personal Access Token to create or update workflow `.github/workflows/build.yml`
 without `workflow` scope)
 ```
 
-**Причина:**  
+**Причина:**
 GitHub требует специальные права `workflow` scope для создания или обновления workflow файлов. Это защита от случайного или злонамеренного изменения CI/CD пайплайнов.
 
-**Решение:**  
+**Решение:**
 Необходимо выполнить push вручную одним из способов:
 
 **Вариант 1: Push через веб-интерфейс GitHub**
@@ -162,10 +162,10 @@ docker pull ghcr.io/oleg-khalyava/systech-aidd-test-bot:latest
 
 **Статус:** ⏳ **PENDING (ожидает настройки)**
 
-**Текущее состояние:**  
+**Текущее состояние:**
 После первой публикации образы будут приватными (по умолчанию).
 
-**Необходимые действия:**  
+**Необходимые действия:**
 Следовать инструкции `devops/doc/github-packages-public.md`:
 
 1. После push и успешной сборки перейти в GitHub Packages
@@ -182,7 +182,7 @@ docker pull ghcr.io/oleg-khalyava/systech-aidd-test-api:latest
 docker pull ghcr.io/oleg-khalyava/systech-aidd-test-frontend:latest
 ```
 
-**Ожидаемый результат:**  
+**Ожидаемый результат:**
 Образы скачиваются без запроса авторизации.
 
 ---
@@ -520,7 +520,7 @@ Content-Type: application/json
 
 ---
 
-**Дата составления:** 18.10.2025  
-**Статус:** Предварительный отчет (pending push)  
+**Дата составления:** 18.10.2025
+**Статус:** Предварительный отчет (pending push)
 **Следующее обновление:** После успешного push и проверки GitHub Actions
 
