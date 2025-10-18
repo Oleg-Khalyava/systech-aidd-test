@@ -1,0 +1,61 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Environment and secrets
+.env
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Documentation
+*.md
+doc/
+docs/
+
+# Python файлы из корня проекта
+src/
+llm/
+api/
+alembic/
+tests/
+*.py
+pyproject.toml
+uv.lock
+
+# Logs
+logs/
+*.log
+
+# DevOps
+devops/
+
+# Other
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+
+
+

@@ -1,0 +1,51 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Git
+.git/
+.gitignore
+
+# Tests and coverage
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+tests/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Logs
+logs/
+*.log
+
+# Environment and secrets
+.env
+.env.local
+
+# Documentation
+*.md
+docs/
+
+# Исключаем другие сервисы
+frontend/
+
+# DevOps
+devops/
+
+# Other
+.DS_Store
+Thumbs.db
+
+
+

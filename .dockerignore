@@ -16,12 +16,14 @@ __pycache__/
 htmlcov/
 .coverage
 coverage.xml
+tests/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+.cursor/
 
 # Logs
 logs/
@@ -34,6 +36,14 @@ logs/
 # Documentation
 *.md
 docs/
+
+# Исключаем другие сервисы (при необходимости) 
+# Комментируем чтобы разрешить сборку всех сервисов
+# api/
+# frontend/
+
+# DevOps
+devops/
 
 # Other
 .DS_Store
