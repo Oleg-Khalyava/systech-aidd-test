@@ -96,3 +96,4 @@ class SQLExecutor:
             logger.error(f"SQL execution error: {e}", exc_info=True)
             raise Exception(f"Failed to execute query: {str(e)}")
 
+

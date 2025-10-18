@@ -133,3 +133,4 @@ foreach ($period in @("day", "week", "month")) {
 - ✅ API endpoints работают корректно
 - ✅ Frontend успешно загружает данные
 
+

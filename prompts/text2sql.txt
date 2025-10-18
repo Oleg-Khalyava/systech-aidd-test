@@ -56,3 +56,4 @@ SQL: SELECT COUNT(*) as deleted_count FROM messages WHERE deleted_at IS NOT NULL
 
 Теперь конвертируй следующий вопрос в SQL:
 
+

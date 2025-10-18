@@ -1,4 +1,4 @@
-.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-stop fe-build fe-lint fe-format fe-type-check fe-check
+.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-stop fe-build fe-lint fe-format fe-type-check fe-check docker-up docker-down docker-restart docker-logs docker-status docker-clean
 
 install:
 	uv sync --all-extras
@@ -70,6 +70,25 @@ fe-type-check:
 fe-check: fe-lint fe-type-check
 	@echo "✅ Frontend checks passed!"
 
+docker-up:
+	docker-compose up -d
+
+docker-down:
+	docker-compose down
+
+docker-restart:
+	docker-compose restart
+
+docker-logs:
+	docker-compose logs -f
+
+docker-status:
+	docker-compose ps
+
+docker-clean:
+	docker-compose down -v
+	@echo "🧹 Docker containers and volumes cleaned"
+
 help:
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "  systech-aidd-test - Makefile Commands"
@@ -106,6 +125,14 @@ help:
 	@echo "  make type-check  - Run type checker (mypy)"
 	@echo "  make check       - Run all checks (lint + type-check + test)"
 	@echo ""
+	@echo "🐳 Docker commands:"
+	@echo "  make docker-up      - Start all services in Docker (detached mode)"
+	@echo "  make docker-down    - Stop all Docker services"
+	@echo "  make docker-restart - Restart all Docker services"
+	@echo "  make docker-logs    - Show logs from all services (follow mode)"
+	@echo "  make docker-status  - Show status of Docker containers"
+	@echo "  make docker-clean   - Stop and remove containers and volumes"
+	@echo ""
 	@echo "🛠️  Utility:"
 	@echo "  make clean       - Clean cache and temp files"
 	@echo "  make help        - Show this help message"
@@ -114,18 +141,23 @@ help:
 	@echo "  Quick Start:"
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo ""
-	@echo "  1. Install dependencies:"
-	@echo "     make install && make fe-install"
+	@echo "  🐳 Docker (Recommended):"
+	@echo "     1. Configure .env file (see .env.example)"
+	@echo "     2. make docker-up"
+	@echo "     3. Open in browser:"
+	@echo "        Frontend:  http://localhost:3000"
+	@echo "        Backend:   http://localhost:8000/docs"
 	@echo ""
-	@echo "  2. Run Backend API (in terminal 1):"
-	@echo "     make api-run"
-	@echo ""
-	@echo "  3. Run Frontend (in terminal 2):"
-	@echo "     make fe-dev"
-	@echo ""
-	@echo "  4. Open in browser:"
-	@echo "     Frontend:  http://localhost:3000"
-	@echo "     Backend:   http://localhost:8000/docs"
+	@echo "  💻 Local Development:"
+	@echo "     1. Install dependencies:"
+	@echo "        make install && make fe-install"
+	@echo "     2. Run Backend API (in terminal 1):"
+	@echo "        make api-run"
+	@echo "     3. Run Frontend (in terminal 2):"
+	@echo "        make fe-dev"
+	@echo "     4. Open in browser:"
+	@echo "        Frontend:  http://localhost:3000"
+	@echo "        Backend:   http://localhost:8000/docs"
 	@echo ""
 	@echo "═══════════════════════════════════════════════════════════════"
 
