@@ -1,5 +1,7 @@
 # 🤖 Systech AIDD Test - Telegram LLM Assistant Bot
 
+![Build Status](https://github.com/Oleg-Khalyava/systech-aidd-test/actions/workflows/build.yml/badge.svg?branch=day-6-devops)
+
 > Production-ready Telegram-бот с интеграцией LLM через OpenRouter API
 
 Telegram-бот на Python, который работает как AI-ассистент с использованием различных LLM моделей через OpenRouter. Проект следует принципам **KISS** (Keep It Simple, Stupid) и **SOLID**, создан с фокусом на простоту, надежность, безопасность и качество кода.

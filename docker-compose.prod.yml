@@ -1,0 +1,51 @@
+# Docker Compose для запуска с образами из GitHub Container Registry
+# Использование: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  bot:
+    image: ghcr.io/oleg-khalyava/systech-aidd-test-bot:${IMAGE_TAG:-latest}
+    container_name: telegram-bot
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    image: ghcr.io/oleg-khalyava/systech-aidd-test-api:${IMAGE_TAG:-latest}
+    container_name: backend-api
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - bot
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: ghcr.io/oleg-khalyava/systech-aidd-test-frontend:${IMAGE_TAG:-latest}
+    container_name: frontend-web
+    env_file: .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+

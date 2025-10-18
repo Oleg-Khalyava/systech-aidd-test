@@ -1,5 +1,7 @@
 # DevOps - Docker Setup
 
+![Build Status](https://github.com/Oleg-Khalyava/systech-aidd-test/actions/workflows/build.yml/badge.svg?branch=day-6-devops)
+
 Эта папка содержит все необходимые файлы для запуска проекта через Docker.
 
 ## 📁 Структура
@@ -57,7 +59,7 @@ make docker-status
 make docker-logs
 ```
 
-## 🐳 Docker команды
+## 🐳 Docker команды (Local Build)
 
 | Команда | Описание |
 |---------|----------|
@@ -67,6 +69,67 @@ make docker-logs
 | `make docker-logs` | Показать логи (follow mode) |
 | `make docker-status` | Показать статус контейнеров |
 | `make docker-clean` | Очистить контейнеры и volumes |
+
+## 📦 Использование образов из GitHub Container Registry
+
+### Публичные образы (Production)
+
+Образы автоматически собираются и публикуются в GitHub Container Registry при каждом push в ветку `day-6-devops`.
+
+**Доступные образы:**
+- `ghcr.io/oleg-khalyava/systech-aidd-test-bot:latest`
+- `ghcr.io/oleg-khalyava/systech-aidd-test-api:latest`
+- `ghcr.io/oleg-khalyava/systech-aidd-test-frontend:latest`
+
+### Команды для работы с production образами
+
+| Команда | Описание |
+|---------|----------|
+| `make docker-prod-pull` | Pull образов из registry |
+| `make docker-prod-up` | Запустить сервисы из registry |
+| `make docker-prod-down` | Остановить production сервисы |
+| `make docker-prod-restart` | Перезапустить production сервисы |
+| `make docker-prod-logs` | Показать логи production сервисов |
+| `make docker-images-list` | Список локальных Docker образов |
+
+### Быстрый старт с production образами
+
+```bash
+# 1. Pull образов из registry
+make docker-prod-pull
+
+# 2. Запуск сервисов
+make docker-prod-up
+
+# 3. Проверка статуса
+docker ps
+
+# 4. Просмотр логов
+make docker-prod-logs
+```
+
+### Использование конкретной версии
+
+По умолчанию используется тег `latest`. Для использования конкретной версии:
+
+```bash
+# Использовать конкретный commit SHA
+IMAGE_TAG=sha-abc1234 docker-compose -f docker-compose.prod.yml up -d
+
+# Или экспортировать переменную
+export IMAGE_TAG=sha-abc1234
+make docker-prod-up
+```
+
+### Переключение между Local Build и Registry Images
+
+```bash
+# Local Build (сборка из исходников)
+make docker-up
+
+# Registry Images (готовые образы из ghcr.io)
+make docker-prod-up
+```
 
 ## 📦 Сервисы
 
@@ -210,15 +273,17 @@ docker image prune -a
 ## 📚 Дополнительная документация
 
 - [DevOps Roadmap](doc/devops-roadmap.md) - план развития DevOps
+- [GitHub Actions Guide](doc/github-actions-guide.md) - руководство по CI/CD
+- [GitHub Packages Public](doc/github-packages-public.md) - настройка публичных образов
 - [Env Template](doc/env-template.md) - шаблон переменных окружения
 - [Main README](../README.md) - основная документация проекта
 
 ## 🎯 Спринты
 
-- ✅ **D0: Basic Docker Setup** (текущий) - базовая настройка Docker
-- 📋 **D1: Build & Publish** - автоматическая сборка и публикация образов
-- 📋 **D2: Server Deploy** - развертывание на сервере
-- 📋 **D3: Auto Deploy** - автоматический деплой через GitHub Actions
+- ✅ **D0: Basic Docker Setup** (завершен) - базовая настройка Docker
+- 🔄 **D1: Build & Publish** (текущий) - автоматическая сборка и публикация образов
+- 📋 **D2: Server Deploy** (следующий) - развертывание на сервере
+- 📋 **D3: Auto Deploy** (планируется) - автоматический деплой через GitHub Actions
 
 См. полный план в [doc/devops-roadmap.md](doc/devops-roadmap.md)
 

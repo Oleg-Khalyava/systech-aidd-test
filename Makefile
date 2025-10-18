@@ -1,4 +1,4 @@
-.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-stop fe-build fe-lint fe-format fe-type-check fe-check docker-up docker-down docker-restart docker-logs docker-status docker-clean
+.PHONY: run stop format test install lint type-check check test-cov clean help api-run api-stop api-test api-docs fe-install fe-dev fe-stop fe-build fe-lint fe-format fe-type-check fe-check docker-up docker-down docker-restart docker-logs docker-status docker-clean docker-prod-pull docker-prod-up docker-prod-down docker-prod-restart docker-prod-logs docker-images-list
 
 install:
 	uv sync --all-extras
@@ -89,6 +89,29 @@ docker-clean:
 	docker-compose down -v
 	@echo "🧹 Docker containers and volumes cleaned"
 
+docker-prod-pull:
+	docker-compose -f docker-compose.prod.yml pull
+	@echo "✅ Production images pulled from GitHub Container Registry"
+
+docker-prod-up:
+	docker-compose -f docker-compose.prod.yml up -d
+	@echo "🚀 Production services started"
+
+docker-prod-down:
+	docker-compose -f docker-compose.prod.yml down
+	@echo "⏹️  Production services stopped"
+
+docker-prod-restart:
+	docker-compose -f docker-compose.prod.yml restart
+	@echo "🔄 Production services restarted"
+
+docker-prod-logs:
+	docker-compose -f docker-compose.prod.yml logs -f
+
+docker-images-list:
+	@echo "Local Docker images:"
+	@docker images | grep -E "(systech-aidd-test|ghcr.io/oleg-khalyava)" || echo "No project images found"
+
 help:
 	@echo "═══════════════════════════════════════════════════════════════"
 	@echo "  systech-aidd-test - Makefile Commands"
@@ -125,13 +148,21 @@ help:
 	@echo "  make type-check  - Run type checker (mypy)"
 	@echo "  make check       - Run all checks (lint + type-check + test)"
 	@echo ""
-	@echo "🐳 Docker commands:"
+	@echo "🐳 Docker commands (Local Build):"
 	@echo "  make docker-up      - Start all services in Docker (detached mode)"
 	@echo "  make docker-down    - Stop all Docker services"
 	@echo "  make docker-restart - Restart all Docker services"
 	@echo "  make docker-logs    - Show logs from all services (follow mode)"
 	@echo "  make docker-status  - Show status of Docker containers"
 	@echo "  make docker-clean   - Stop and remove containers and volumes"
+	@echo ""
+	@echo "📦 Docker Production (Registry Images):"
+	@echo "  make docker-prod-pull    - Pull images from GitHub Container Registry"
+	@echo "  make docker-prod-up      - Start services using registry images"
+	@echo "  make docker-prod-down    - Stop production services"
+	@echo "  make docker-prod-restart - Restart production services"
+	@echo "  make docker-prod-logs    - Show logs from production services"
+	@echo "  make docker-images-list  - List local Docker images"
 	@echo ""
 	@echo "🛠️  Utility:"
 	@echo "  make clean       - Clean cache and temp files"
