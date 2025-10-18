@@ -30,8 +30,8 @@ jobs:
             context: .
             dockerfile: ./devops/api.Dockerfile
           - service: frontend
-            context: ./frontend
-            dockerfile: ../devops/frontend.Dockerfile
+            context: .
+            dockerfile: ./devops/frontend.Dockerfile
 
     steps:
       # 1. Checkout кода
